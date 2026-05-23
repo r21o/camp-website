@@ -3,21 +3,169 @@
 <head>
   <title>Example Website</title>
   <meta charset="UTF-8">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css" >
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Kaisei+Decol:wght@700&family=Noto+Sans+JP:wght@400;700&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(160deg, #ffd6e8 0%, #ffecd2 50%, #d4f1f9 100%);
+      font-family: 'Noto Sans JP', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .bubble {
+      position: fixed;
+      border-radius: 50%;
+      opacity: 0.22;
+      animation: float var(--dur) ease-in-out infinite alternate;
+      pointer-events: none;
+    }
+    @keyframes float {
+      from { transform: translateY(0) scale(1); }
+      to   { transform: translateY(-28px) scale(1.05); }
+    }
+
+    .deco {
+      position: fixed;
+      font-size: var(--sz);
+      animation: spin var(--dur) linear infinite;
+      opacity: 0.15;
+      pointer-events: none;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    main {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 480px;
+      padding: 24px;
+      text-align: center;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.78);
+      backdrop-filter: blur(20px);
+      border-radius: 36px;
+      padding: 44px 40px 40px;
+      box-shadow:
+        0 8px 40px rgba(255,150,180,0.22),
+        0 2px 0 rgba(255,255,255,0.9) inset;
+      border: 2px solid rgba(255,255,255,0.85);
+    }
+
+    .mascot-img {
+      width: 120px;
+      height: 120px;
+      object-fit: contain;
+      margin-bottom: 16px;
+      animation: bounce 2.4s ease-in-out infinite;
+      filter: drop-shadow(0 6px 16px rgba(255,150,180,0.35));
+    }
+    @keyframes bounce {
+      0%,100% { transform: translateY(0); }
+      50%      { transform: translateY(-12px); }
+    }
+
+    h1 {
+      font-family: 'Kaisei Decol', serif;
+      font-size: 2rem;
+      color: #e07aaa;
+      margin-bottom: 10px;
+      letter-spacing: 2px;
+      text-shadow: 0 2px 10px rgba(224,122,170,0.25);
+    }
+
+    .description {
+      color: #b0a0b8;
+      font-size: 0.92rem;
+      margin-bottom: 28px;
+      letter-spacing: 0.5px;
+    }
+
+    .link-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .link-list a {
+      display: block;
+      background: linear-gradient(135deg, rgba(249,168,212,0.25), rgba(196,181,253,0.25));
+      border: 2px solid rgba(249,168,212,0.5);
+      border-radius: 20px;
+      padding: 14px 20px;
+      color: #9a4a7a;
+      font-weight: 700;
+      font-size: 1rem;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      letter-spacing: 0.5px;
+    }
+    .link-list a:hover {
+      background: linear-gradient(135deg, rgba(249,168,212,0.5), rgba(196,181,253,0.45));
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(244,114,182,0.25);
+      border-color: #f472b6;
+    }
+
+    .game-link a {
+      background: linear-gradient(135deg, #f9a8d4, #f472b6);
+      border: none;
+      color: white;
+      box-shadow: 0 4px 16px rgba(244,114,182,0.45);
+    }
+    .game-link a:hover {
+      background: linear-gradient(135deg, #f472b6, #db2777);
+      border: none;
+      box-shadow: 0 6px 24px rgba(244,114,182,0.6);
+    }
+
+    .footer-deco {
+      font-size: 1.4rem;
+      letter-spacing: 6px;
+      opacity: 0.5;
+    }
   </style>
 </head>
 <body>
-  <main class="container">
-    <h1>Example Website</h1>
-    <p>これはウェブサイトです。</p>
-    
-    <ul>
-      <li><a href="https://www.google.com/">Google</a></li>
-      <li><a href="https://www.yahoo.co.jp/">Yahoo! JAPAN</a></li>
+
+<div class="bubble" style="width:280px;height:280px;background:#ffd6e8;top:-80px;left:-80px;--dur:6s"></div>
+<div class="bubble" style="width:180px;height:180px;background:#c7f2fa;bottom:-50px;right:-40px;--dur:8s"></div>
+<div class="bubble" style="width:130px;height:130px;background:#ffecd2;top:35%;left:78%;--dur:7s"></div>
+<div class="deco" style="top:8%;left:6%;--sz:2.8rem;--dur:12s">🌸</div>
+<div class="deco" style="top:72%;left:4%;--sz:2.2rem;--dur:16s">⭐</div>
+<div class="deco" style="top:12%;right:7%;--sz:2.6rem;--dur:10s">🍭</div>
+<div class="deco" style="bottom:12%;right:8%;--sz:2.8rem;--dur:14s">🎀</div>
+<div class="deco" style="bottom:8%;left:38%;--sz:1.8rem;--dur:18s">✨</div>
+
+<main>
+  <div class="card">
+    <img src="computer01_smile.png" alt="笑顔のコンピューター" class="mascot-img">
+    <h1>ようこそ！</h1>
+    <p class="description">これはわたしのウェブサイトです 🌷</p>
+
+    <ul class="link-list">
+      <li><a href="https://www.google.com/" target="_blank">🔍 Google</a></li>
+      <li><a href="https://www.yahoo.co.jp/" target="_blank">📰 Yahoo! JAPAN</a></li>
+      <li class="game-link"><a href="guessgame.html">🎮 かずあてゲーム</a></li>
     </ul>
-    
-    <img src="computer01_smile.png" alt="笑顔のコンピューター">
-  </main>
+
+    <p class="footer-deco">🌸 ✨ 🎀</p>
+  </div>
+</main>
+
 </body>
 </html>
