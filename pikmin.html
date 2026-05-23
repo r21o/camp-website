@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <title>ピクミン図鑑</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Kaisei+Decol:wght@700&family=Noto+Sans+JP:wght@400;700&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(160deg, #d4f1d4 0%, #ffecd2 50%, #d4f1f9 100%);
+      font-family: 'Noto Sans JP', sans-serif;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 32px 20px 48px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    .bubble { position: fixed; border-radius: 50%; opacity: 0.22; animation: float var(--dur) ease-in-out infinite alternate; pointer-events: none; }
+    @keyframes float { from { transform: translateY(0) scale(1); } to { transform: translateY(-28px) scale(1.05); } }
+    .deco { position: fixed; font-size: var(--sz); animation: spin var(--dur) linear infinite; opacity: 0.15; pointer-events: none; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+    #backBtn {
+      position: fixed; top: 16px; left: 16px; z-index: 100;
+      background: rgba(255,255,255,0.78); backdrop-filter: blur(12px);
+      border: 2px solid rgba(255,255,255,0.9); border-radius: 20px;
+      padding: 8px 16px; font-family: 'Noto Sans JP', sans-serif;
+      font-weight: 700; font-size: 0.85rem; color: #5a9a3a;
+      text-decoration: none; box-shadow: 0 4px 16px rgba(100,200,100,0.2);
+      transition: all 0.2s;
+    }
+    #backBtn:hover { transform: translateY(-2px); }
+
+    main { position: relative; z-index: 1; width: 100%; max-width: 520px; }
+
+    h1 {
+      font-family: 'Kaisei Decol', serif; font-size: 1.8rem;
+      color: #3a8a2a; text-align: center; margin-bottom: 6px;
+      letter-spacing: 2px; text-shadow: 0 2px 10px rgba(80,160,60,0.25);
+    }
+    .subtitle { text-align: center; color: #88aa70; font-size: 0.85rem; margin-bottom: 24px; letter-spacing: 1px; }
+
+
+    /* ピクミンカードグリッド */
+    #pikminGrid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .pikmin-card {
+      background: rgba(255,255,255,0.82);
+      backdrop-filter: blur(20px);
+      border-radius: 24px;
+      border: 2px solid rgba(255,255,255,0.9);
+      box-shadow: 0 4px 20px rgba(100,180,80,0.12);
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .pikmin-card:hover { transform: translateY(-4px); box-shadow: 0 8px 28px rgba(100,180,80,0.25); }
+
+    .card-top {
+      padding: 20px 16px 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+    .pikmin-img { width: 90px; height: 90px; object-fit: contain; margin-bottom: 6px; animation: bounce 2.4s ease-in-out infinite; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15)); }
+    .pikmin-emoji { font-size: 3.8rem; margin-bottom: 6px; animation: bounce 2.4s ease-in-out infinite; }
+    @keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+    .pikmin-card:nth-child(2n) .pikmin-img { animation-delay: 0.4s; }
+    .pikmin-card:nth-child(3n) .pikmin-img { animation-delay: 0.8s; }
+
+    .pikmin-name {
+      font-family: 'Kaisei Decol', serif;
+      font-size: 1.1rem;
+      color: #3a5a2a;
+      text-align: center;
+      letter-spacing: 1px;
+    }
+    .pikmin-en { font-size: 0.72rem; color: #99bb80; letter-spacing: 1px; margin-top: 2px; }
+
+    .card-bottom {
+      padding: 10px 14px 14px;
+      border-top: 1px dashed rgba(180,220,140,0.5);
+    }
+    .type-badge {
+      display: inline-block;
+      padding: 3px 12px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: white;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+    .pikmin-short {
+      font-size: 0.8rem;
+      color: #7a9a6a;
+      line-height: 1.6;
+    }
+
+    /* 詳細モーダル */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      backdrop-filter: blur(6px);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      animation: fadeIn 0.2s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .modal {
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 32px;
+      border: 2px solid rgba(255,255,255,0.95);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+      width: 100%;
+      max-width: 400px;
+      overflow: hidden;
+      animation: slideUp 0.3s cubic-bezier(.34,1.56,.64,1);
+    }
+    @keyframes slideUp { from { transform: translateY(40px) scale(0.95); opacity: 0; } to { transform: none; opacity: 1; } }
+
+    .modal-header {
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .modal-header span { font-family: 'Kaisei Decol', serif; color: white; font-size: 0.95rem; letter-spacing: 1px; }
+    .modal-close {
+      background: rgba(255,255,255,0.25);
+      border: none;
+      border-radius: 50%;
+      width: 30px; height: 30px;
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s;
+    }
+    .modal-close:hover { background: rgba(255,255,255,0.4); }
+
+    .modal-body { padding: 24px 28px 28px; text-align: center; }
+    .modal-emoji { font-size: 5rem; margin-bottom: 8px; display: block; animation: bounce 2s ease-in-out infinite; }
+    .modal-img { width: 120px; height: 120px; object-fit: contain; margin-bottom: 8px; display: block; margin-left: auto; margin-right: auto; animation: bounce 2s ease-in-out infinite; filter: drop-shadow(0 6px 12px rgba(0,0,0,0.15)); }
+    .modal-name { font-family: 'Kaisei Decol', serif; font-size: 1.8rem; color: #3a5a2a; margin-bottom: 4px; letter-spacing: 2px; }
+    .modal-en { color: #99bb80; font-size: 0.85rem; margin-bottom: 16px; }
+
+    .modal-tags { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 18px; }
+    .modal-tag { padding: 4px 14px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; color: white; letter-spacing: 1px; }
+
+    .modal-desc {
+      font-size: 0.88rem; color: #6a8a5a; line-height: 1.85;
+      background: rgba(220,245,200,0.4); border-radius: 16px;
+      padding: 14px 18px; border: 1px solid rgba(160,210,120,0.4);
+      text-align: left; margin-bottom: 18px;
+    }
+
+    /* 能力バー */
+    .stat-bars { margin-bottom: 4px; }
+    .stat-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .stat-label { font-size: 0.75rem; color: #99bb80; width: 52px; flex-shrink: 0; text-align: right; }
+    .stat-bg { flex: 1; height: 10px; background: rgba(180,220,140,0.25); border-radius: 10px; overflow: hidden; }
+    .stat-fill { height: 100%; border-radius: 10px; transition: width 0.8s cubic-bezier(.34,1.56,.64,1); width: 0; }
+
+    .modal-btn {
+      width: 100%; border: none; border-radius: 16px; padding: 13px;
+      font-size: 0.95rem; font-weight: 700; font-family: 'Noto Sans JP', sans-serif;
+      cursor: pointer; transition: all 0.2s; letter-spacing: 1px;
+      color: white; margin-top: 4px;
+    }
+    .modal-btn:hover { transform: translateY(-2px); }
+    .modal-btn:active { transform: none; }
+  </style>
+</head>
+<body>
+
+<div class="bubble" style="width:280px;height:280px;background:#d4f1d4;top:-80px;left:-80px;--dur:6s"></div>
+<div class="bubble" style="width:180px;height:180px;background:#ffecd2;bottom:-50px;right:-40px;--dur:8s"></div>
+<div class="bubble" style="width:130px;height:130px;background:#d4f1f9;top:35%;left:78%;--dur:7s"></div>
+<div class="deco" style="top:8%;left:6%;--sz:2.8rem;--dur:12s">🌿</div>
+<div class="deco" style="top:72%;left:4%;--sz:2.2rem;--dur:16s">🌸</div>
+<div class="deco" style="top:12%;right:7%;--sz:2.6rem;--dur:10s">⭐</div>
+<div class="deco" style="bottom:12%;right:8%;--sz:2.8rem;--dur:14s">🍀</div>
+
+<a href="index.html" id="backBtn">🏠 もどる</a>
+
+<main>
+  <h1>🌿 ピクミン図鑑</h1>
+  <p class="subtitle">ピクミンをえらんでくわしくみよう♪</p>
+
+  <div id="pikminGrid"></div>
+</main>
+
+<!-- 詳細モーダル -->
+<div class="modal-overlay" id="modalOverlay" style="display:none" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header" id="modalHeader">
+      <span id="modalHeaderTitle"></span>
+      <button class="modal-close" onclick="closeModalBtn()">✕</button>
+    </div>
+    <div class="modal-body">
+      <span class="modal-emoji" id="modalEmoji"></span>
+      <img class="modal-img" id="modalImg" src="" alt="" style="display:none">
+      <p class="modal-name" id="modalName"></p>
+      <p class="modal-en" id="modalEn"></p>
+      <div class="modal-tags" id="modalTags"></div>
+      <p class="modal-desc" id="modalDesc"></p>
+      <div class="stat-bars" id="statBars"></div>
+      <button class="modal-btn" id="modalBtn" onclick="closeModalBtn()">とじる</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const PIKMIN = [
+    {
+      name: 'アカピクミン',
+      en: 'Red Pikmin',
+      emoji: '🔴',
+      image: '1_red.webp',
+      color: '#ef4444',
+      type: 'こうげき',
+      typeColor: '#ef4444',
+      short: 'はな（鼻）が大きくて力持ち。攻撃力が一番高い！',
+      desc: '赤いボディとでっぱった大きな鼻が特徴。全ピクミンの中でこうげき力が最も高く、たたかいが得意。くさや炎にも強い耐性を持ち、戦闘の頼れるエース。オリマーと一番最初に出会うピクミン。',
+      tags: ['こうげき力↑', '炎に強い', '最初の仲間'],
+      tagColors: ['#ef4444', '#f97316', '#6366f1'],
+      stats: { こうげき: 95, ぼうぎょ: 65, はやさ: 60, もちはこび: 70, たいきゅう: 75 }
+    },
+    {
+      name: 'キイロピクミン',
+      en: 'Yellow Pikmin',
+      emoji: '🟡',
+      image: '3_yellow.webp',
+      color: '#eab308',
+      type: 'ばくだん',
+      typeColor: '#eab308',
+      short: '耳が大きくてジャンプ力抜群。爆弾岩を使える！',
+      desc: '大きな耳とぶさいくな顔がかわいい黄色いピクミン。ジャンプ力がずば抜けて高く、高い場所にも投げ届く。爆弾岩を運べる唯一のピクミンで、かたい壁や敵を爆破できる。電気にも強い。',
+      tags: ['ジャンプ力↑', '電気に強い', '爆弾岩OK'],
+      tagColors: ['#eab308', '#06b6d4', '#ef4444'],
+      stats: { こうげき: 55, ぼうぎょ: 60, はやさ: 65, もちはこび: 60, たいきゅう: 70 }
+    },
+    {
+      name: 'アオピクミン',
+      en: 'Blue Pikmin',
+      emoji: '🔵',
+      image: '2_blue.webp',
+      color: '#3b82f6',
+      type: 'すいちゅう',
+      typeColor: '#3b82f6',
+      short: 'えらがあって水の中でも平気！仲間を助けてくれる。',
+      desc: '口のまわりにえらがある青いピクミン。水の中でも溺れずに動ける唯一のピクミン。川や海のエリアでは欠かせない存在で、溺れている仲間を助けてくれる優しいピクミン。',
+      tags: ['みずに強い', '仲間を救助', '水中探索'],
+      tagColors: ['#3b82f6', '#06b6d4', '#10b981'],
+      stats: { こうげき: 65, ぼうぎょ: 70, はやさ: 60, もちはこび: 75, たいきゅう: 80 }
+    },
+    {
+      name: 'ムラサキピクミン',
+      en: 'Purple Pikmin',
+      emoji: '🟣',
+      image: '4_purple.webp',
+      color: '#8b5cf6',
+      type: 'ちから',
+      typeColor: '#8b5cf6',
+      short: 'ずんぐりむっくりで超パワー！10匹分の力を持つ。',
+      desc: '丸くてずんぐりした体とひげが特徴の紫色のピクミン。1匹で通常ピクミンの10倍の重さを運べるほどの怪力を誇る。着地した衝撃で周囲の敵をしびれさせることもできる。その分足が遅い。',
+      tags: ['怪力10倍', 'しびれ攻撃', 'ゆっくりさん'],
+      tagColors: ['#8b5cf6', '#ec4899', '#f97316'],
+      stats: { こうげき: 88, ぼうぎょ: 85, はやさ: 30, もちはこび: 100, たいきゅう: 88 }
+    },
+    {
+      name: 'シロピクミン',
+      en: 'White Pikmin',
+      emoji: '⚪',
+      image: '5_white.webp',
+      color: '#94a3b8',
+      type: 'どく',
+      typeColor: '#94a3b8',
+      short: '足が速くて毒も平気！食べた敵にダメージを与える。',
+      desc: '白くて細い体と赤い目が特徴の素早いピクミン。全ピクミン中最速の移動速度を誇る。毒ガスにも強く、自分が食べられた際に敵を毒でダメージを与えることができる。宝探しも得意。',
+      tags: ['足が一番速い', 'どくに強い', '宝センサー'],
+      tagColors: ['#94a3b8', '#10b981', '#f59e0b'],
+      stats: { こうげき: 50, ぼうぎょ: 45, はやさ: 100, もちはこび: 50, たいきゅう: 60 }
+    },
+    {
+      name: 'ハネピクミン',
+      en: 'Winged Pikmin',
+      emoji: '🩷',
+      image: '7_winged.webp',
+      color: '#ec4899',
+      type: 'ひこう',
+      typeColor: '#ec4899',
+      short: '羽ではばたいて空を飛べる！水の上も渡れる。',
+      desc: '小さな羽で空を自由に飛び回れるピンクのピクミン。水の上を飛び越えたり、空中の敵にも攻撃できる。空から荷物を運ぶことも可能で、機動力が高い。かわいらしい見た目で人気も高い。',
+      tags: ['そらをとべる', '水の上もOK', 'すばしっこい'],
+      tagColors: ['#ec4899', '#3b82f6', '#a78bfa'],
+      stats: { こうげき: 55, ぼうぎょ: 50, はやさ: 88, もちはこび: 55, たいきゅう: 58 }
+    },
+    {
+      name: 'イワピクミン',
+      en: 'Rock Pikmin',
+      emoji: '🪨',
+      image: '6_rock.webp',
+      color: '#78716c',
+      type: 'いわ',
+      typeColor: '#78716c',
+      short: '硬い体でクリスタルを壊せる！踏まれてもびくともしない。',
+      desc: '丸くて石のように硬い体を持つピクミン。クリスタルの壁や水晶のような硬い敵の殻を砕くことができる唯一のピクミン。投げて使うと強烈な衝撃を与える。踏まれても大丈夫。',
+      tags: ['クリスタル破壊', 'ふまれても無敵', '突撃力↑'],
+      tagColors: ['#78716c', '#ef4444', '#6366f1'],
+      stats: { こうげき: 78, ぼうぎょ: 100, はやさ: 45, もちはこび: 70, たいきゅう: 95 }
+    },
+    {
+      name: 'ヒカリピクミン',
+      en: 'Glow Pikmin',
+      emoji: '🌟',
+      color: '#06b6d4',
+      type: 'ひかり',
+      typeColor: '#06b6d4',
+      short: '夜に光る神秘的なピクミン。ひとりで活動できる！',
+      desc: '夜の探索で出会える発光するピクミン。自らの意思で行動し、オリマーがいなくてもひとりで活動できる自立したピクミン。暗闇の中で光を放ち、夜の探索を助けてくれる。ピクミン4で登場。',
+      tags: ['夜に光る', '自律行動', 'ピクミン4'],
+      tagColors: ['#06b6d4', '#8b5cf6', '#fbbf24'],
+      stats: { こうげき: 60, ぼうぎょ: 60, はやさ: 80, もちはこび: 60, たいきゅう: 70 }
+    },
+    {
+      name: 'オッチン',
+      en: 'Oatchi',
+      emoji: '🐶',
+      color: '#d97706',
+      type: 'いぬ',
+      typeColor: '#d97706',
+      short: 'ピクミン4の相棒！ピクミンを乗せて走れる犬キャラ。',
+      desc: 'ピクミン4に登場する救助犬。技術的にはピクミンではないが、ピクミンと一緒に行動する頼れる相棒。背中にピクミンを乗せて移動でき、水の中も泳げる。成長するとどんどん強くなる。',
+      tags: ['ピクミン4', '相棒', 'ピクミンを乗せる'],
+      tagColors: ['#d97706', '#3b82f6', '#ec4899'],
+      stats: { こうげき: 80, ぼうぎょ: 80, はやさ: 75, もちはこび: 90, たいきゅう: 85 }
+    },
+  ];
+
+  function renderGrid() {
+    const grid = document.getElementById('pikminGrid');
+    grid.innerHTML = '';
+    const list = PIKMIN;
+
+    list.forEach(p => {
+      const card = document.createElement('div');
+      card.className = 'pikmin-card';
+      card.innerHTML = `
+        <div class="card-top" style="background:linear-gradient(160deg,${p.color}18,${p.color}08)">
+          ${p.image
+            ? `<img src="${p.image}" alt="${p.name}" class="pikmin-img">`
+            : `<span class="pikmin-emoji">${p.emoji}</span>`}
+          <p class="pikmin-name">${p.name}</p>
+          <p class="pikmin-en">${p.en}</p>
+        </div>
+        <div class="card-bottom">
+          <span class="type-badge" style="background:${p.typeColor}">${p.type}</span>
+          <p class="pikmin-short">${p.short}</p>
+        </div>
+      `;
+      card.addEventListener('click', () => openModal(p));
+      grid.appendChild(card);
+    });
+  }
+
+  function openModal(p) {
+    document.getElementById('modalHeaderTitle').textContent = `🌿 ${p.name}`;
+    document.getElementById('modalHeader').style.background = `linear-gradient(135deg, ${p.color}, ${p.color}aa)`;
+    const emojiEl = document.getElementById('modalEmoji');
+    const imgEl   = document.getElementById('modalImg');
+    if (p.image) {
+      emojiEl.style.display = 'none';
+      imgEl.src = p.image;
+      imgEl.alt = p.name;
+      imgEl.style.display = 'block';
+    } else {
+      emojiEl.textContent = p.emoji;
+      emojiEl.style.display = 'block';
+      imgEl.style.display = 'none';
+    }
+    document.getElementById('modalName').textContent = p.name;
+    document.getElementById('modalEn').textContent = p.en;
+    document.getElementById('modalDesc').textContent = p.desc;
+
+    const tagsEl = document.getElementById('modalTags');
+    tagsEl.innerHTML = '';
+    p.tags.forEach((tag, i) => {
+      const span = document.createElement('span');
+      span.className = 'modal-tag';
+      span.textContent = tag;
+      span.style.background = p.tagColors[i] || p.color;
+      tagsEl.appendChild(span);
+    });
+
+    const statColors = ['#ef4444','#3b82f6','#eab308','#10b981','#8b5cf6'];
+    const barsEl = document.getElementById('statBars');
+    barsEl.innerHTML = '';
+    Object.entries(p.stats).forEach(([label, val], i) => {
+      barsEl.innerHTML += `
+        <div class="stat-row">
+          <span class="stat-label">${label}</span>
+          <div class="stat-bg">
+            <div class="stat-fill" style="background:${statColors[i]}" data-val="${val}"></div>
+          </div>
+        </div>
+      `;
+    });
+
+    const btn = document.getElementById('modalBtn');
+    btn.style.background = `linear-gradient(135deg, ${p.color}, ${p.color}bb)`;
+    btn.style.boxShadow = `0 4px 14px ${p.color}55`;
+
+    document.getElementById('modalOverlay').style.display = 'flex';
+
+    setTimeout(() => {
+      document.querySelectorAll('.stat-fill').forEach(bar => {
+        bar.style.width = bar.dataset.val + '%';
+      });
+    }, 100);
+  }
+
+  function closeModal(e) {
+    if (e.target === document.getElementById('modalOverlay')) closeModalBtn();
+  }
+  function closeModalBtn() {
+    document.getElementById('modalOverlay').style.display = 'none';
+  }
+
+  renderGrid();
+</script>
+
+</body>
+</html>

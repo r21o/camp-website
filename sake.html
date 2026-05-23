@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <title>日本酒おすすめ</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Kaisei+Decol:wght@700&family=Noto+Sans+JP:wght@400;700&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(160deg, #ffd6e8 0%, #ffecd2 50%, #d4f1f9 100%);
+      font-family: 'Noto Sans JP', sans-serif;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 32px 20px 48px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    .bubble { position: fixed; border-radius: 50%; opacity: 0.22; animation: float var(--dur) ease-in-out infinite alternate; pointer-events: none; }
+    @keyframes float { from { transform: translateY(0) scale(1); } to { transform: translateY(-28px) scale(1.05); } }
+    .deco { position: fixed; font-size: var(--sz); animation: spin var(--dur) linear infinite; opacity: 0.15; pointer-events: none; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+    #backBtn {
+      position: fixed; top: 16px; left: 16px; z-index: 100;
+      background: rgba(255,255,255,0.78); backdrop-filter: blur(12px);
+      border: 2px solid rgba(255,255,255,0.9); border-radius: 20px;
+      padding: 8px 16px; font-family: 'Noto Sans JP', sans-serif;
+      font-weight: 700; font-size: 0.85rem; color: #e07aaa;
+      text-decoration: none; box-shadow: 0 4px 16px rgba(255,150,180,0.2);
+      transition: all 0.2s;
+    }
+    #backBtn:hover { transform: translateY(-2px); }
+
+    main { position: relative; z-index: 1; width: 100%; max-width: 500px; }
+
+    h1 {
+      font-family: 'Kaisei Decol', serif; font-size: 1.8rem;
+      color: #e07aaa; text-align: center; margin-bottom: 6px;
+      letter-spacing: 2px; text-shadow: 0 2px 10px rgba(224,122,170,0.3);
+    }
+    .subtitle { text-align: center; color: #b0a0b8; font-size: 0.85rem; margin-bottom: 24px; letter-spacing: 1px; }
+
+    /* ステップカード */
+    .card {
+      background: rgba(255,255,255,0.78);
+      backdrop-filter: blur(20px);
+      border-radius: 28px;
+      border: 2px solid rgba(255,255,255,0.9);
+      box-shadow: 0 8px 40px rgba(255,150,180,0.22), 0 2px 0 rgba(255,255,255,0.9) inset;
+      padding: 28px;
+      margin-bottom: 16px;
+    }
+
+    .step-label {
+      font-size: 0.72rem; color: #c4a0c8; letter-spacing: 2px;
+      margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+    }
+    .step-label::after { content: ''; flex: 1; height: 1px; background: rgba(249,168,212,0.4); }
+
+    .question { font-family: 'Kaisei Decol', serif; font-size: 1.1rem; color: #7c3aed; margin-bottom: 16px; }
+
+    /* 選択肢ボタン */
+    .options { display: flex; flex-direction: column; gap: 8px; }
+    .opt-btn {
+      background: rgba(253,242,248,0.8);
+      border: 2px solid rgba(249,168,212,0.4);
+      border-radius: 16px;
+      padding: 12px 18px;
+      text-align: left;
+      cursor: pointer;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 0.95rem;
+      color: #7a4a6a;
+      font-weight: 700;
+      transition: all 0.2s ease;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .opt-btn:hover { background: rgba(249,168,212,0.2); border-color: #f472b6; transform: translateX(4px); }
+    .opt-btn.selected {
+      background: linear-gradient(135deg, rgba(249,168,212,0.35), rgba(196,181,253,0.35));
+      border-color: #f472b6;
+      box-shadow: 0 0 0 2px rgba(244,114,182,0.2);
+    }
+    .opt-icon { font-size: 1.3rem; }
+
+    /* 結果 */
+    .result-card {
+      background: rgba(255,255,255,0.78);
+      backdrop-filter: blur(20px);
+      border-radius: 28px;
+      border: 2px solid rgba(255,255,255,0.9);
+      box-shadow: 0 8px 40px rgba(255,150,180,0.22), 0 2px 0 rgba(255,255,255,0.9) inset;
+      overflow: hidden;
+      display: none;
+    }
+    .result-header {
+      background: linear-gradient(135deg, #f9a8d4, #c4b5fd);
+      padding: 12px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .result-header span { font-family: 'Kaisei Decol', serif; color: white; font-size: 0.95rem; letter-spacing: 1px; }
+    .result-dots { display: flex; gap: 5px; }
+    .result-dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.6); }
+    .result-dot:first-child { background: rgba(255,255,255,0.95); }
+
+    .result-body { padding: 24px 28px 28px; }
+
+    .sake-name { font-family: 'Kaisei Decol', serif; font-size: 1.8rem; color: #7c3aed; margin-bottom: 4px; letter-spacing: 2px; }
+    .sake-brewery { color: #c4a0c8; font-size: 0.85rem; margin-bottom: 16px; letter-spacing: 1px; }
+
+    .sake-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+    .tag {
+      padding: 4px 14px; border-radius: 20px; font-size: 0.78rem;
+      font-weight: 700; color: white; letter-spacing: 1px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .sake-desc {
+      font-size: 0.9rem; color: #9a7aaa; line-height: 1.8;
+      background: rgba(253,242,248,0.6); border-radius: 16px;
+      padding: 14px 18px; border: 1px solid rgba(249,168,212,0.3);
+      margin-bottom: 20px;
+    }
+
+    /* フレーバーバー */
+    .flavor-bars { margin-bottom: 20px; }
+    .flavor-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .flavor-label { font-size: 0.78rem; color: #c4a0c8; width: 48px; flex-shrink: 0; text-align: right; }
+    .bar-bg { flex: 1; height: 10px; background: rgba(249,168,212,0.2); border-radius: 10px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 10px; transition: width 0.8s cubic-bezier(.34,1.56,.64,1); }
+
+    /* ボタン */
+    .btn-row { display: flex; gap: 10px; }
+    .btn {
+      flex: 1; border: none; border-radius: 16px; padding: 13px;
+      font-size: 0.95rem; font-weight: 700; font-family: 'Noto Sans JP', sans-serif;
+      cursor: pointer; transition: all 0.2s; letter-spacing: 1px;
+    }
+    .btn-pink { background: linear-gradient(135deg, #f9a8d4, #f472b6); color: white; box-shadow: 0 4px 14px rgba(244,114,182,0.4); }
+    .btn-pink:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(244,114,182,0.6); }
+    .btn-purple { background: linear-gradient(135deg, #c4b5fd, #a78bfa); color: white; box-shadow: 0 4px 14px rgba(167,139,250,0.4); }
+    .btn-purple:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(167,139,250,0.6); }
+    .btn:active { transform: none !important; }
+  </style>
+</head>
+<body>
+
+<div class="bubble" style="width:280px;height:280px;background:#ffd6e8;top:-80px;left:-80px;--dur:6s"></div>
+<div class="bubble" style="width:180px;height:180px;background:#c7f2fa;bottom:-50px;right:-40px;--dur:8s"></div>
+<div class="bubble" style="width:130px;height:130px;background:#ffecd2;top:35%;left:78%;--dur:7s"></div>
+<div class="deco" style="top:8%;left:6%;--sz:2.8rem;--dur:12s">🌸</div>
+<div class="deco" style="top:72%;left:4%;--sz:2.2rem;--dur:16s">🍶</div>
+<div class="deco" style="top:12%;right:7%;--sz:2.6rem;--dur:10s">✨</div>
+<div class="deco" style="bottom:12%;right:8%;--sz:2.8rem;--dur:14s">🎀</div>
+
+<a href="index.html" id="backBtn">🏠 もどる</a>
+
+<main>
+  <h1>🍶 日本酒えらび</h1>
+  <p class="subtitle">すきな味を教えてね♪</p>
+
+  <!-- Q1 -->
+  <div class="card" id="q1">
+    <p class="step-label">STEP 1</p>
+    <p class="question">どんな味が好き？</p>
+    <div class="options">
+      <button class="opt-btn" onclick="select('taste','sweet')"><span class="opt-icon">🍬</span>あまくてまろやか</button>
+      <button class="opt-btn" onclick="select('taste','dry')"><span class="opt-icon">💎</span>すっきりからくち</button>
+      <button class="opt-btn" onclick="select('taste','rich')"><span class="opt-icon">🧈</span>こってりうまみたっぷり</button>
+      <button class="opt-btn" onclick="select('taste','fruity')"><span class="opt-icon">🍑</span>フルーティでさわやか</button>
+    </div>
+  </div>
+
+  <!-- Q2 -->
+  <div class="card" id="q2" style="display:none">
+    <p class="step-label">STEP 2</p>
+    <p class="question">どんな場面で飲む？</p>
+    <div class="options">
+      <button class="opt-btn" onclick="select('scene','food')"><span class="opt-icon">🍣</span>ごはんのお供に</button>
+      <button class="opt-btn" onclick="select('scene','relax')"><span class="opt-icon">🛁</span>ゆっくりくつろぎたい</button>
+      <button class="opt-btn" onclick="select('scene','party')"><span class="opt-icon">🥂</span>みんなでわいわい</button>
+      <button class="opt-btn" onclick="select('scene','gift')"><span class="opt-icon">🎁</span>プレゼントにしたい</button>
+    </div>
+  </div>
+
+  <!-- Q3 -->
+  <div class="card" id="q3" style="display:none">
+    <p class="step-label">STEP 3</p>
+    <p class="question">温度は？</p>
+    <div class="options">
+      <button class="opt-btn" onclick="select('temp','cold')"><span class="opt-icon">🧊</span>冷やして（冷酒）</button>
+      <button class="opt-btn" onclick="select('temp','room')"><span class="opt-icon">🌡️</span>常温でそのまま</button>
+      <button class="opt-btn" onclick="select('temp','hot')"><span class="opt-icon">♨️</span>あたためて（燗酒）</button>
+    </div>
+  </div>
+
+  <!-- 結果 -->
+  <div class="result-card" id="resultCard">
+    <div class="result-header">
+      <span>🌸 あなたへのおすすめ</span>
+      <div class="result-dots">
+        <div class="result-dot"></div><div class="result-dot"></div><div class="result-dot"></div>
+      </div>
+    </div>
+    <div class="result-body">
+      <p class="sake-name" id="sakeName"></p>
+      <p class="sake-brewery" id="sakeBrewery"></p>
+      <div class="sake-tags" id="sakeTags"></div>
+      <div class="flavor-bars" id="flavorBars"></div>
+      <p class="sake-desc" id="sakeDesc"></p>
+      <div class="btn-row">
+        <button class="btn btn-purple" onclick="showAnother()">🎲 ほかにも見る</button>
+        <button class="btn btn-pink" onclick="restart()">🔄 はじめから</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  const SAKE_DB = [
+    {
+      name: '獺祭 純米大吟醸 三割九分',
+      brewery: '旭酒造（山口県）',
+      tags: ['純米大吟醸', 'フルーティ', '甘口'],
+      tagColors: ['#f472b6', '#a78bfa', '#fb923c'],
+      flavor: { 甘み: 80, 酸味: 55, 香り: 90, キレ: 60, 旨み: 70 },
+      desc: '洗練されたりんごのような香りと、やわらかな甘みが特徴。冷やして飲むのが一番おいしい。日本酒が初めての方にもおすすめの一本です。',
+      taste: ['sweet', 'fruity'], scene: ['relax', 'party', 'gift'], temp: ['cold']
+    },
+    {
+      name: '久保田 千寿',
+      brewery: '朝日酒造（新潟県）',
+      tags: ['特別本醸造', '辛口', 'すっきり'],
+      tagColors: ['#38bdf8', '#6366f1', '#34d399'],
+      flavor: { 甘み: 35, 酸味: 40, 香り: 45, キレ: 90, 旨み: 65 },
+      desc: 'すっきりとしたキレのよい辛口。雑味がなくどんな料理にも合わせやすい食中酒の定番。燗でも冷でも美味しく飲める万能な一本。',
+      taste: ['dry'], scene: ['food', 'party'], temp: ['cold', 'room', 'hot']
+    },
+    {
+      name: '十四代 本丸',
+      brewery: '高木酒造（山形県）',
+      tags: ['特別本醸造', '甘口', '香り高い'],
+      tagColors: ['#fb923c', '#f472b6', '#a78bfa'],
+      flavor: { 甘み: 85, 酸味: 50, 香り: 85, キレ: 55, 旨み: 80 },
+      desc: 'フルーティで華やかな香りとやさしい甘み。「幻の日本酒」とも呼ばれる人気銘柄。ギフトにも喜ばれる特別な一本です。',
+      taste: ['sweet', 'fruity'], scene: ['relax', 'gift'], temp: ['cold']
+    },
+    {
+      name: '八海山 普通酒',
+      brewery: '八海醸造（新潟県）',
+      tags: ['普通酒', '淡麗', 'バランス良し'],
+      tagColors: ['#38bdf8', '#34d399', '#fbbf24'],
+      flavor: { 甘み: 45, 酸味: 35, 香り: 40, キレ: 80, 旨み: 70 },
+      desc: '新潟の名水で仕込んだすっきり淡麗な味わい。くせがなく飲み飽きない。お刺身や塩系のおつまみと抜群に合います。',
+      taste: ['dry'], scene: ['food', 'party'], temp: ['cold', 'room']
+    },
+    {
+      name: '而今 純米吟醸 山田錦',
+      brewery: '木屋正酒造（三重県）',
+      tags: ['純米吟醸', 'フルーティ', '旨口'],
+      tagColors: ['#f472b6', '#fb923c', '#a78bfa'],
+      flavor: { 甘み: 70, 酸味: 65, 香り: 80, キレ: 65, 旨み: 85 },
+      desc: 'みずみずしい果実のような香りと豊かな旨み。酸味とのバランスが絶妙で、飲み飽きしない複雑さがある。日本酒好きにプレゼントして喜ばれる一本。',
+      taste: ['fruity', 'rich'], scene: ['relax', 'gift', 'food'], temp: ['cold']
+    },
+    {
+      name: '飛露喜 特別純米',
+      brewery: '廣木酒造（福島県）',
+      tags: ['特別純米', '旨口', 'やや甘'],
+      tagColors: ['#34d399', '#f472b6', '#fbbf24'],
+      flavor: { 甘み: 65, 酸味: 55, 香り: 60, キレ: 65, 旨み: 90 },
+      desc: '豊かな旨みと適度なキレが調和した旨口タイプ。食事の邪魔をせず、むしろ料理を引き立てる食中酒として最適です。',
+      taste: ['rich', 'sweet'], scene: ['food', 'relax'], temp: ['cold', 'room']
+    },
+    {
+      name: '黒龍 特吟',
+      brewery: '黒龍酒造（福井県）',
+      tags: ['大吟醸', '辛口', '上品'],
+      tagColors: ['#6366f1', '#38bdf8', '#a78bfa'],
+      flavor: { 甘み: 40, 酸味: 45, 香り: 75, キレ: 85, 旨み: 70 },
+      desc: '上品で繊細な吟醸香と、すっきりしたキレのある辛口。贈り物に喜ばれる高級感のある一本。冷やして上品な香りを楽しんで。',
+      taste: ['dry'], scene: ['gift', 'party', 'relax'], temp: ['cold']
+    },
+    {
+      name: '菊正宗 上撰 本醸造',
+      brewery: '菊正宗酒造（兵庫県）',
+      tags: ['本醸造', '辛口', '燗映え'],
+      tagColors: ['#fb923c', '#38bdf8', '#34d399'],
+      flavor: { 甘み: 30, 酸味: 40, 香り: 40, キレ: 85, 旨み: 75 },
+      desc: '灘の辛口の代名詞。燗にすると旨みが広がり、体がほっと温まる。鍋料理や焼き魚と合わせるとたまらない、冬の定番。',
+      taste: ['dry', 'rich'], scene: ['food', 'relax'], temp: ['hot', 'room']
+    },
+    {
+      name: '新政 No.6 X-type',
+      brewery: '新政酒造（秋田県）',
+      tags: ['純米酒', '酸味豊か', '個性派'],
+      tagColors: ['#f472b6', '#fbbf24', '#6366f1'],
+      flavor: { 甘み: 55, 酸味: 90, 香り: 70, キレ: 60, 旨み: 75 },
+      desc: '生酛造りならではの豊かな乳酸の酸味が特徴的。ワイン好きにも刺さる個性的な味わい。おしゃれな一本としてプレゼントにも人気。',
+      taste: ['fruity', 'rich'], scene: ['gift', 'party', 'relax'], temp: ['cold']
+    },
+    {
+      name: '出羽桜 桜花 吟醸',
+      brewery: '出羽桜酒造（山形県）',
+      tags: ['吟醸', 'フルーティ', '初心者向け'],
+      tagColors: ['#f472b6', '#a78bfa', '#34d399'],
+      flavor: { 甘み: 65, 酸味: 50, 香り: 80, キレ: 60, 旨み: 65 },
+      desc: '桜のような華やかな吟醸香と、やわらかな甘み。日本酒が初めての方や女性にも飲みやすい、バランスのよい一本です。',
+      taste: ['fruity', 'sweet'], scene: ['party', 'relax', 'gift'], temp: ['cold']
+    },
+    {
+      name: '田酒 特別純米',
+      brewery: '西田酒造店（青森県）',
+      tags: ['特別純米', '旨口', '米の旨み'],
+      tagColors: ['#34d399', '#f472b6', '#fbbf24'],
+      flavor: { 甘み: 60, 酸味: 50, 香り: 55, キレ: 70, 旨み: 92 },
+      desc: '青森の米と水だけで醸した純粋な旨み。「田の酒」の名の通り、米の甘みと旨みがしっかりと感じられる。燗にするとさらに旨みが引き立つ。',
+      taste: ['rich', 'sweet'], scene: ['food', 'relax'], temp: ['hot', 'room', 'cold']
+    },
+    {
+      name: '磯自慢 中取り純米大吟醸',
+      brewery: '磯自慢酒造（静岡県）',
+      tags: ['純米大吟醸', '上品', '繊細'],
+      tagColors: ['#38bdf8', '#a78bfa', '#f472b6'],
+      flavor: { 甘み: 50, 酸味: 45, 香り: 85, キレ: 80, 旨み: 72 },
+      desc: '洗練された上品な吟醸香と、細やかなキレ。G8サミットで提供された実績を持つ静岡の名酒。特別な日や贈り物にぴったりの一本。',
+      taste: ['dry', 'fruity'], scene: ['gift', 'party'], temp: ['cold']
+    },
+    {
+      name: '鍋島 特別純米',
+      brewery: '富久千代酒造（佐賀県）',
+      tags: ['特別純米', 'フルーティ', '九州'],
+      tagColors: ['#fb923c', '#f472b6', '#34d399'],
+      flavor: { 甘み: 68, 酸味: 62, 香り: 72, キレ: 65, 旨み: 78 },
+      desc: 'インターナショナル・ワイン・チャレンジで最高賞を受賞した佐賀の銘酒。果実感のある香りと豊かな旨みが調和した飲みやすい一本。',
+      taste: ['fruity', 'sweet'], scene: ['party', 'gift', 'food'], temp: ['cold']
+    },
+    {
+      name: '春鹿 超辛口 純米',
+      brewery: '今西清兵衛商店（奈良県）',
+      tags: ['純米', '超辛口', '食中酒'],
+      tagColors: ['#6366f1', '#38bdf8', '#34d399'],
+      flavor: { 甘み: 20, 酸味: 45, 香り: 40, キレ: 95, 旨み: 65 },
+      desc: '日本最古の神社・春日大社の御膝元で醸す超辛口の純米酒。キリッとしたキレと淡麗な味わいが料理を引き立てる。揚げ物や濃い味の料理と抜群に合う。',
+      taste: ['dry'], scene: ['food', 'party'], temp: ['cold', 'room']
+    },
+    {
+      name: '雨後の月 特別純米',
+      brewery: '相原酒造（広島県）',
+      tags: ['特別純米', '上品', 'やわらか'],
+      tagColors: ['#c4b5fd', '#f472b6', '#38bdf8'],
+      flavor: { 甘み: 58, 酸味: 48, 香り: 65, キレ: 68, 旨み: 75 },
+      desc: 'やわらかな口当たりと品のある味わい。広島の軟水が生む繊細さが特徴で、後口がすっきりしている。女性や日本酒初心者にも飲みやすい。',
+      taste: ['sweet', 'fruity'], scene: ['relax', 'party', 'gift'], temp: ['cold']
+    },
+    {
+      name: '花陽浴 純米大吟醸 八反錦',
+      brewery: '南陽醸造（埼玉県）',
+      tags: ['純米大吟醸', '甘口', 'トロピカル'],
+      tagColors: ['#fb923c', '#f472b6', '#fbbf24'],
+      flavor: { 甘み: 90, 酸味: 60, 香り: 88, キレ: 45, 旨み: 75 },
+      desc: 'メロンやパイナップルを思わせるトロピカルな香りと濃厚な甘み。フルーティな日本酒の代表格で、甘いお酒が好きな方に特におすすめ。',
+      taste: ['sweet', 'fruity'], scene: ['relax', 'gift'], temp: ['cold']
+    },
+    {
+      name: '天狗舞 山廃純米',
+      brewery: '車多酒造（石川県）',
+      tags: ['山廃純米', '濃醇', '個性的'],
+      tagColors: ['#d97706', '#6366f1', '#f472b6'],
+      flavor: { 甘み: 55, 酸味: 78, 香り: 60, キレ: 65, 旨み: 88 },
+      desc: '山廃仕込みならではの力強い酸味と濃醇な旨み。熟成感のある複雑な味わいで燗にすると真価を発揮する。肉料理や濃い味のつまみに最適。',
+      taste: ['rich'], scene: ['food', 'relax'], temp: ['hot', 'room']
+    },
+    {
+      name: '醸し人九平次 うすにごり',
+      brewery: '萬乗醸造（愛知県）',
+      tags: ['純米大吟醸', 'にごり', 'おしゃれ'],
+      tagColors: ['#f472b6', '#38bdf8', '#a78bfa'],
+      flavor: { 甘み: 72, 酸味: 70, 香り: 75, キレ: 58, 旨み: 80 },
+      desc: 'パリのレストランでも提供される洗練された味わい。うっすらとした濁りの中に果実感と乳酸の爽やかさが同居する。おしゃれなプレゼントに。',
+      taste: ['fruity', 'rich'], scene: ['gift', 'party', 'relax'], temp: ['cold']
+    },
+    {
+      name: '白鶴 上撰 まる',
+      brewery: '白鶴酒造（兵庫県）',
+      tags: ['本醸造', '定番', '飲みやすい'],
+      tagColors: ['#34d399', '#38bdf8', '#fbbf24'],
+      flavor: { 甘み: 50, 酸味: 35, 香り: 35, キレ: 72, 旨み: 65 },
+      desc: 'スーパーやコンビニでも買える定番中の定番。くせがなく毎日飲んでも飽きない味わい。燗でも冷でも美味しく、日本酒入門にも最適の一本。',
+      taste: ['dry', 'sweet'], scene: ['food', 'party'], temp: ['hot', 'room', 'cold']
+    },
+    {
+      name: '三千盛 純米超辛口',
+      brewery: '三千盛（岐阜県）',
+      tags: ['純米', '超辛口', '淡麗'],
+      tagColors: ['#6366f1', '#34d399', '#38bdf8'],
+      flavor: { 甘み: 18, 酸味: 42, 香り: 38, キレ: 98, 旨み: 58 },
+      desc: '岐阜・多治見の超辛口純米酒。水のようなすっきり感でぐいぐい飲めてしまう危険な一本。天ぷらや魚介系のシンプルな料理と最高に合う。',
+      taste: ['dry'], scene: ['food'], temp: ['cold', 'room']
+    },
+  ];
+
+  const answers = {};
+  let currentCandidates = [];
+  let shownIndex = 0;
+
+  function select(key, value) {
+    answers[key] = value;
+
+    // 選択ボタンをハイライト
+    const card = document.getElementById('q' + ({taste:1,scene:2,temp:3}[key]));
+    card.querySelectorAll('.opt-btn').forEach(btn => btn.classList.remove('selected'));
+    event.currentTarget.classList.add('selected');
+
+    setTimeout(() => {
+      if (key === 'taste') {
+        document.getElementById('q2').style.display = 'block';
+        document.getElementById('q2').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else if (key === 'scene') {
+        document.getElementById('q3').style.display = 'block';
+        document.getElementById('q3').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else if (key === 'temp') {
+        showResult();
+      }
+    }, 200);
+  }
+
+  function score(sake) {
+    let s = 0;
+    if (sake.taste.includes(answers.taste)) s += 3;
+    if (sake.scene.includes(answers.scene)) s += 2;
+    if (sake.temp.includes(answers.temp))   s += 2;
+    return s;
+  }
+
+  function showResult() {
+    // スコア順にソートして上位を候補に
+    currentCandidates = [...SAKE_DB]
+      .map(s => ({ ...s, _score: score(s) }))
+      .sort((a, b) => b._score - a._score);
+    shownIndex = 0;
+    renderResult(currentCandidates[0]);
+  }
+
+  function renderResult(sake) {
+    document.getElementById('sakeName').textContent = sake.name;
+    document.getElementById('sakeBrewery').textContent = sake.brewery;
+    document.getElementById('sakeDesc').textContent = sake.desc;
+
+    // タグ
+    const tagsEl = document.getElementById('sakeTags');
+    tagsEl.innerHTML = '';
+    sake.tags.forEach((tag, i) => {
+      const span = document.createElement('span');
+      span.className = 'tag';
+      span.textContent = tag;
+      span.style.background = sake.tagColors[i] || '#f472b6';
+      tagsEl.appendChild(span);
+    });
+
+    // フレーバーバー
+    const colors = ['#f472b6','#fb923c','#a78bfa','#38bdf8','#34d399'];
+    const barsEl = document.getElementById('flavorBars');
+    barsEl.innerHTML = '';
+    Object.entries(sake.flavor).forEach(([label, val], i) => {
+      barsEl.innerHTML += `
+        <div class="flavor-row">
+          <span class="flavor-label">${label}</span>
+          <div class="bar-bg">
+            <div class="bar-fill" style="width:0%;background:${colors[i]}" data-val="${val}"></div>
+          </div>
+        </div>
+      `;
+    });
+
+    document.getElementById('resultCard').style.display = 'block';
+    document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    // バーをアニメーション
+    setTimeout(() => {
+      document.querySelectorAll('.bar-fill').forEach(bar => {
+        bar.style.width = bar.dataset.val + '%';
+      });
+    }, 100);
+  }
+
+  function showAnother() {
+    shownIndex = (shownIndex + 1) % currentCandidates.length;
+    // バーをリセット
+    document.querySelectorAll('.bar-fill').forEach(bar => bar.style.width = '0%');
+    setTimeout(() => renderResult(currentCandidates[shownIndex]), 100);
+  }
+
+  function restart() {
+    answers.taste = answers.scene = answers.temp = undefined;
+    document.getElementById('q1').querySelectorAll('.opt-btn').forEach(b => b.classList.remove('selected'));
+    document.getElementById('q2').querySelectorAll('.opt-btn').forEach(b => b.classList.remove('selected'));
+    document.getElementById('q3').querySelectorAll('.opt-btn').forEach(b => b.classList.remove('selected'));
+    document.getElementById('q2').style.display = 'none';
+    document.getElementById('q3').style.display = 'none';
+    document.getElementById('resultCard').style.display = 'none';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+
+</body>
+</html>
