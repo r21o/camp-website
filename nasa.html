@@ -358,17 +358,31 @@
     showLoading();
     fetch(`https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY&date=${date}`)
       .then(r => {
+        if (r.status === 429) throw new Error('rate_limit');
+        if (r.status === 404) throw new Error('not_found');
         if (!r.ok) throw new Error('HTTP ' + r.status);
         return r.json();
       })
       .then(renderCard)
       .catch(function(err) {
         document.getElementById('cardHeader').style.display = 'none';
+        let msg = 'よみこみに失敗しました 😢';
+        let sub = String(err);
+        if (String(err).includes('rate_limit')) {
+          msg = '⏳ アクセスが多すぎます';
+          sub = 'DEMO_KEY の制限（1時間30回）に達しました。しばらく待ってからもう一度どうぞ！';
+        } else if (String(err).includes('not_found')) {
+          msg = '📅 この日の写真はありません';
+          sub = '別の日付を選んでみてね';
+        } else if (String(err).includes('Failed to fetch')) {
+          msg = '📡 通信エラーです';
+          sub = 'インターネット接続を確認してね';
+        }
         document.getElementById('cardBody').innerHTML = `
           <div class="loading-area">
             <span style="font-size:2.5rem">😢</span>
-            <p class="loading-text">よみこみに失敗しました</p>
-            <p style="font-size:0.75rem;color:#c4a0c8">${err}</p>
+            <p class="loading-text">${msg}</p>
+            <p style="font-size:0.78rem;color:#c4a0c8;margin-top:6px;padding:0 16px;line-height:1.6">${sub}</p>
           </div>
         `;
       });

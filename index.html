@@ -14,163 +14,204 @@
       background: linear-gradient(160deg, #ffd6e8 0%, #ffecd2 50%, #d4f1f9 100%);
       font-family: 'Noto Sans JP', sans-serif;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: center;
-      overflow: hidden;
+      padding: 40px 20px 60px;
       position: relative;
+      overflow-x: hidden;
     }
 
-    .bubble {
-      position: fixed;
-      border-radius: 50%;
-      opacity: 0.22;
-      animation: float var(--dur) ease-in-out infinite alternate;
-      pointer-events: none;
-    }
-    @keyframes float {
-      from { transform: translateY(0) scale(1); }
-      to   { transform: translateY(-28px) scale(1.05); }
-    }
-
-    .deco {
-      position: fixed;
-      font-size: var(--sz);
-      animation: spin var(--dur) linear infinite;
-      opacity: 0.15;
-      pointer-events: none;
-    }
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to   { transform: rotate(360deg); }
-    }
+    .bubble { position: fixed; border-radius: 50%; opacity: 0.22; animation: float var(--dur) ease-in-out infinite alternate; pointer-events: none; }
+    @keyframes float { from { transform: translateY(0) scale(1); } to { transform: translateY(-28px) scale(1.05); } }
+    .deco { position: fixed; font-size: var(--sz); animation: spin var(--dur) linear infinite; opacity: 0.15; pointer-events: none; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
     main {
       position: relative;
       z-index: 1;
       width: 100%;
-      max-width: 480px;
-      padding: 24px;
+      max-width: 600px;
       text-align: center;
     }
 
-    .card {
+    /* ヒーローエリア */
+    .hero {
       background: rgba(255,255,255,0.78);
       backdrop-filter: blur(20px);
       border-radius: 36px;
-      padding: 44px 40px 40px;
-      box-shadow:
-        0 8px 40px rgba(255,150,180,0.22),
-        0 2px 0 rgba(255,255,255,0.9) inset;
+      padding: 36px 40px 32px;
+      box-shadow: 0 8px 40px rgba(255,150,180,0.22), 0 2px 0 rgba(255,255,255,0.9) inset;
       border: 2px solid rgba(255,255,255,0.85);
+      margin-bottom: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
     .mascot-img {
-      width: 120px;
-      height: 120px;
+      width: 100px; height: 100px;
       object-fit: contain;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
       animation: bounce 2.4s ease-in-out infinite;
       filter: drop-shadow(0 6px 16px rgba(255,150,180,0.35));
     }
-    @keyframes bounce {
-      0%,100% { transform: translateY(0); }
-      50%      { transform: translateY(-12px); }
-    }
+    @keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 
     h1 {
       font-family: 'Kaisei Decol', serif;
       font-size: 2rem;
       color: #e07aaa;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
       letter-spacing: 2px;
       text-shadow: 0 2px 10px rgba(224,122,170,0.25);
     }
+    .description { color: #b0a0b8; font-size: 0.88rem; letter-spacing: 0.5px; }
 
-    .description {
-      color: #b0a0b8;
-      font-size: 0.92rem;
-      margin-bottom: 28px;
-      letter-spacing: 0.5px;
+    /* セクションラベル */
+    .section-label {
+      font-size: 0.72rem;
+      color: #c4a0c8;
+      letter-spacing: 3px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-label::before, .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: rgba(249,168,212,0.4);
     }
 
-    .link-list {
-      list-style: none;
+    /* リンクグリッド */
+    .link-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .link-card {
+      background: rgba(255,255,255,0.78);
+      backdrop-filter: blur(16px);
+      border-radius: 22px;
+      border: 2px solid rgba(255,255,255,0.9);
+      box-shadow: 0 4px 16px rgba(255,150,180,0.12);
+      padding: 18px 10px 14px;
+      text-decoration: none;
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      margin-bottom: 28px;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.22s cubic-bezier(.34,1.56,.64,1);
+    }
+    .link-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 28px rgba(244,114,182,0.3);
+      border-color: #f9a8d4;
+      background: rgba(255,240,248,0.9);
     }
 
-    .link-list a {
-      display: block;
-      background: linear-gradient(135deg, rgba(249,168,212,0.25), rgba(196,181,253,0.25));
-      border: 2px solid rgba(249,168,212,0.5);
-      border-radius: 20px;
-      padding: 14px 20px;
-      color: #9a4a7a;
+    .link-icon {
+      font-size: 2rem;
+      line-height: 1;
+    }
+    .link-label {
+      font-size: 0.78rem;
       font-weight: 700;
-      font-size: 1rem;
-      text-decoration: none;
-      transition: all 0.2s ease;
+      color: #9a4a7a;
       letter-spacing: 0.5px;
-    }
-    .link-list a:hover {
-      background: linear-gradient(135deg, rgba(249,168,212,0.5), rgba(196,181,253,0.45));
-      transform: translateY(-3px);
-      box-shadow: 0 6px 20px rgba(244,114,182,0.25);
-      border-color: #f472b6;
+      line-height: 1.3;
     }
 
-    .game-link a {
-      background: linear-gradient(135deg, #f9a8d4, #f472b6);
-      border: none;
-      color: white;
-      box-shadow: 0 4px 16px rgba(244,114,182,0.45);
+    /* 外部リンクはちょっとちがう見た目 */
+    .link-card.external {
+      background: rgba(249,168,212,0.12);
+      border-color: rgba(249,168,212,0.35);
     }
-    .game-link a:hover {
-      background: linear-gradient(135deg, #f472b6, #db2777);
-      border: none;
-      box-shadow: 0 6px 24px rgba(244,114,182,0.6);
-    }
+    .link-card.external .link-label { color: #b060a0; }
 
-    .footer-deco {
-      font-size: 1.4rem;
-      letter-spacing: 6px;
-      opacity: 0.5;
-    }
+    /* フッター */
+    .footer-deco { font-size: 1.3rem; letter-spacing: 6px; opacity: 0.45; margin-top: 20px; }
   </style>
 </head>
 <body>
 
-<div class="bubble" style="width:280px;height:280px;background:#ffd6e8;top:-80px;left:-80px;--dur:6s"></div>
-<div class="bubble" style="width:180px;height:180px;background:#c7f2fa;bottom:-50px;right:-40px;--dur:8s"></div>
-<div class="bubble" style="width:130px;height:130px;background:#ffecd2;top:35%;left:78%;--dur:7s"></div>
-<div class="deco" style="top:8%;left:6%;--sz:2.8rem;--dur:12s">🌸</div>
-<div class="deco" style="top:72%;left:4%;--sz:2.2rem;--dur:16s">⭐</div>
-<div class="deco" style="top:12%;right:7%;--sz:2.6rem;--dur:10s">🍭</div>
-<div class="deco" style="bottom:12%;right:8%;--sz:2.8rem;--dur:14s">🎀</div>
-<div class="deco" style="bottom:8%;left:38%;--sz:1.8rem;--dur:18s">✨</div>
+<div class="bubble" style="width:300px;height:300px;background:#ffd6e8;top:-80px;left:-80px;--dur:6s"></div>
+<div class="bubble" style="width:200px;height:200px;background:#ffc0d4;bottom:-60px;right:-40px;--dur:8s"></div>
+<div class="bubble" style="width:140px;height:140px;background:#ffecd2;top:40%;left:76%;--dur:7s"></div>
+<div class="deco" style="top:4%;left:4%;--sz:2.8rem;--dur:12s">🎀</div>
+<div class="deco" style="top:18%;left:2%;--sz:2rem;--dur:9s">💗</div>
+<div class="deco" style="top:38%;left:1%;--sz:1.8rem;--dur:14s">🎀</div>
+<div class="deco" style="top:58%;left:3%;--sz:2.4rem;--dur:11s">💖</div>
+<div class="deco" style="top:75%;left:1%;--sz:1.6rem;--dur:17s">🎀</div>
+<div class="deco" style="top:88%;left:5%;--sz:2rem;--dur:13s">💝</div>
+<div class="deco" style="top:4%;right:4%;--sz:2.2rem;--dur:10s">💗</div>
+<div class="deco" style="top:20%;right:2%;--sz:2.8rem;--dur:15s">🎀</div>
+<div class="deco" style="top:40%;right:1%;--sz:2rem;--dur:8s">💖</div>
+<div class="deco" style="top:60%;right:3%;--sz:2.6rem;--dur:12s">🎀</div>
+<div class="deco" style="top:78%;right:2%;--sz:1.8rem;--dur:16s">💗</div>
+<div class="deco" style="top:92%;right:5%;--sz:2.2rem;--dur:11s">💝</div>
+<div class="deco" style="top:50%;left:48%;--sz:1.4rem;--dur:20s">🎀</div>
 
 <main>
-  <div class="card">
+
+  <!-- ヒーロー -->
+  <div class="hero">
     <img src="computer01_smile.png" alt="笑顔のコンピューター" class="mascot-img">
-    <h1>ようこそ！</h1>
-    <p class="description">これはわたしのウェブサイトです 🌷</p>
-
-    <ul class="link-list">
-      <li><a href="https://www.google.com/" target="_blank">🔍 Google</a></li>
-      <li><a href="https://www.yahoo.co.jp/" target="_blank">📰 Yahoo! JAPAN</a></li>
-      <li class="game-link"><a href="guessgame.html">🎮 かずあてゲーム</a></li>
-      <li class="game-link"><a href="pokemon.html">🔮 ポケモン図鑑</a></li>
-      <li class="game-link"><a href="nasa.html">🌌 NASA 天体写真</a></li>
-      <li class="game-link"><a href="hanabi.html">🎆 花火</a></li>
-      <li class="game-link"><a href="local_storage.html">📝 やることリスト</a></li>
-      <li class="game-link"><a href="sake.html">🍶 日本酒えらび</a></li>
-      <li class="game-link"><a href="pikmin.html">🌿 ピクミン図鑑</a></li>
-    </ul>
-
-    <p class="footer-deco">🌸 ✨ 🎀</p>
+    <h1>💗 ようこそ！ 💗</h1>
+    <p class="description">これはわたしのウェブサイトです 🎀</p>
+    <p style="font-size:1.4rem;letter-spacing:6px;margin-top:12px;opacity:0.6">💖 🎀 💗 🎀 💖</p>
   </div>
+
+  <!-- 外部リンク -->
+  <p class="section-label">🎀 リンク 🎀</p>
+  <div class="link-grid" style="grid-template-columns: repeat(2,1fr); margin-bottom:20px;">
+    <a href="https://www.google.com/" target="_blank" class="link-card external">
+      <span class="link-icon">🔍</span>
+      <span class="link-label">Google</span>
+    </a>
+    <a href="https://www.yahoo.co.jp/" target="_blank" class="link-card external">
+      <span class="link-icon">📰</span>
+      <span class="link-label">Yahoo! JAPAN</span>
+    </a>
+  </div>
+
+  <!-- ページリンク -->
+  <p class="section-label">💗 コンテンツ 💗</p>
+  <div class="link-grid">
+    <a href="guessgame.html" class="link-card">
+      <span class="link-icon">🎮</span>
+      <span class="link-label">かずあてゲーム</span>
+    </a>
+    <a href="pokemon.html" class="link-card">
+      <span class="link-icon">🔮</span>
+      <span class="link-label">ポケモン図鑑</span>
+    </a>
+    <a href="nasa.html" class="link-card">
+      <span class="link-icon">🌌</span>
+      <span class="link-label">NASA 天体写真</span>
+    </a>
+    <a href="hanabi.html" class="link-card">
+      <span class="link-icon">🎆</span>
+      <span class="link-label">花火</span>
+    </a>
+    <a href="local_storage.html" class="link-card">
+      <span class="link-icon">📝</span>
+      <span class="link-label">やることリスト</span>
+    </a>
+    <a href="sake.html" class="link-card">
+      <span class="link-icon">🍶</span>
+      <span class="link-label">日本酒えらび</span>
+    </a>
+    <a href="pikmin.html" class="link-card">
+      <span class="link-icon">🌿</span>
+      <span class="link-label">ピクミン図鑑</span>
+    </a>
+  </div>
+
+  <p class="footer-deco">💖 🎀 💗 🎀 💖 🎀 💗 🎀 💖</p>
 </main>
 
 </body>
