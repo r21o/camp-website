@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <title>おみくじ</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Kaisei+Decol:wght@700&family=Noto+Sans+JP:wght@400;700&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(160deg, #ffd6e8 0%, #ffecd2 50%, #d4f1f9 100%);
+      font-family: 'Noto Sans JP', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .bubble { position: fixed; border-radius: 50%; opacity: 0.22; animation: floatB var(--dur) ease-in-out infinite alternate; pointer-events: none; }
+    @keyframes floatB { from { transform: translateY(0) scale(1); } to { transform: translateY(-28px) scale(1.05); } }
+
+    .particle {
+      position: fixed; pointer-events: none;
+      font-size: var(--sz);
+      animation: rise var(--dur) ease-in var(--delay) infinite;
+      opacity: 0; z-index: 0;
+    }
+    @keyframes rise {
+      0%   { transform: translateY(0) rotate(0deg); opacity: 0; }
+      10%  { opacity: 0.6; }
+      80%  { opacity: 0.3; }
+      100% { transform: translateY(-100vh) rotate(var(--rot)); opacity: 0; }
+    }
+
+    #backBtn {
+      position: fixed; top: 16px; left: 16px; z-index: 100;
+      background: rgba(255,255,255,0.78); backdrop-filter: blur(12px);
+      border: 2px solid rgba(255,255,255,0.9); border-radius: 20px;
+      padding: 8px 16px; font-family: 'Noto Sans JP', sans-serif;
+      font-weight: 700; font-size: 0.85rem; color: #e07aaa;
+      text-decoration: none; box-shadow: 0 4px 16px rgba(255,150,180,0.2);
+      transition: all 0.2s;
+    }
+    #backBtn:hover { transform: translateY(-2px); }
+
+    main {
+      position: relative; z-index: 1;
+      width: 100%; max-width: 400px;
+      text-align: center;
+    }
+
+    h1 {
+      font-family: 'Kaisei Decol', serif;
+      font-size: 1.8rem; color: #e07aaa;
+      margin-bottom: 6px; letter-spacing: 3px;
+      text-shadow: 0 2px 10px rgba(224,122,170,0.3);
+    }
+    .subtitle { color: #b0a0b8; font-size: 0.85rem; margin-bottom: 28px; letter-spacing: 1px; }
+
+    /* 箱 */
+    .box-wrap {
+      display: flex; justify-content: center;
+      margin-bottom: 28px;
+    }
+    .omikuji-box {
+      width: 130px; height: 160px;
+      background: linear-gradient(160deg, #f9a8d4, #f472b6);
+      border-radius: 16px 16px 8px 8px;
+      box-shadow: 0 8px 30px rgba(244,114,182,0.45), 0 2px 0 rgba(255,255,255,0.4) inset;
+      cursor: pointer;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 8px;
+      transition: transform 0.15s ease;
+      position: relative;
+      border: 2px solid rgba(255,255,255,0.5);
+    }
+    .omikuji-box::before {
+      content: '';
+      position: absolute; top: -12px;
+      width: 80%; height: 24px;
+      background: linear-gradient(135deg, #fde68a, #fb923c);
+      border-radius: 8px 8px 0 0;
+      box-shadow: 0 -2px 8px rgba(251,146,60,0.4);
+    }
+    .omikuji-box:hover { transform: translateY(-4px) rotate(-2deg); }
+    .omikuji-box:active { transform: scale(0.96); }
+    .box-icon { font-size: 3rem; }
+    .box-label { font-family: 'Kaisei Decol', serif; color: white; font-size: 0.9rem; letter-spacing: 3px; }
+
+    /* 結果カード */
+    .result-card {
+      background: rgba(255,255,255,0.88);
+      backdrop-filter: blur(20px);
+      border-radius: 32px;
+      border: 2px solid rgba(255,255,255,0.9);
+      box-shadow: 0 8px 40px rgba(255,150,180,0.25);
+      overflow: hidden;
+      display: none;
+      animation: popIn 0.5s cubic-bezier(.34,1.56,.64,1);
+    }
+    @keyframes popIn {
+      from { transform: scale(0.7) translateY(20px); opacity: 0; }
+      to   { transform: none; opacity: 1; }
+    }
+
+    .result-header {
+      padding: 14px 20px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .result-header-title { font-family: 'Kaisei Decol', serif; color: white; font-size: 0.92rem; letter-spacing: 2px; }
+    .header-dots { display: flex; gap: 5px; }
+    .header-dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.6); }
+    .header-dot:first-child { background: rgba(255,255,255,0.95); }
+
+    .result-body { padding: 28px 28px 32px; }
+
+    .result-rank {
+      font-family: 'Kaisei Decol', serif;
+      font-size: 3rem;
+      margin-bottom: 4px;
+      letter-spacing: 4px;
+    }
+    .result-rank-en { font-size: 0.78rem; color: #c4a0c8; letter-spacing: 2px; margin-bottom: 20px; }
+
+    .result-sections {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+      text-align: left;
+    }
+    .result-section {
+      background: rgba(253,242,248,0.7);
+      border-radius: 16px;
+      padding: 12px 14px;
+      border: 1px solid rgba(249,168,212,0.3);
+    }
+    .result-section.wide {
+      grid-column: 1 / -1;
+    }
+    .section-title {
+      font-size: 0.68rem; color: #c4a0c8;
+      letter-spacing: 2px; margin-bottom: 4px;
+    }
+    .section-value {
+      font-size: 0.9rem; font-weight: 700;
+      color: #7a4a6a; line-height: 1.5;
+    }
+
+    .lucky-item {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .lucky-icon { font-size: 1.3rem; }
+
+    .result-msg {
+      font-size: 0.85rem; color: #9a7aaa;
+      line-height: 1.85;
+      background: rgba(253,242,248,0.6);
+      border-radius: 16px;
+      padding: 14px 18px;
+      border: 1px solid rgba(249,168,212,0.25);
+      text-align: left;
+      margin-bottom: 20px;
+    }
+
+    .again-btn {
+      width: 100%; border: none; border-radius: 20px; padding: 14px;
+      font-size: 1rem; font-weight: 700; font-family: 'Noto Sans JP', sans-serif;
+      cursor: pointer; transition: all 0.2s; letter-spacing: 1px;
+      background: linear-gradient(135deg, #f9a8d4, #f472b6);
+      color: white; box-shadow: 0 4px 16px rgba(244,114,182,0.4);
+    }
+    .again-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 22px rgba(244,114,182,0.6); }
+    .again-btn:active { transform: none; }
+
+    /* 紙吹雪 */
+    .confetti {
+      position: fixed; pointer-events: none;
+      font-size: var(--sz);
+      animation: confettiFall var(--dur) ease-in var(--delay) forwards;
+      opacity: 0; z-index: 999;
+    }
+    @keyframes confettiFall {
+      0%   { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(110vh) rotate(var(--rot)); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="bubble" style="width:280px;height:280px;background:#ffd6e8;top:-80px;left:-80px;--dur:6s"></div>
+<div class="bubble" style="width:180px;height:180px;background:#ffc0d4;bottom:-50px;right:-40px;--dur:8s"></div>
+
+<a href="index.html" id="backBtn">🏠 もどる</a>
+
+<main>
+  <h1>🎋 おみくじ</h1>
+  <p class="subtitle">箱をタップして運勢をひこう♪</p>
+
+  <div class="box-wrap">
+    <div class="omikuji-box" id="omikujiBox" onclick="draw()">
+      <span class="box-icon">🎋</span>
+      <span class="box-label">おみくじ</span>
+    </div>
+  </div>
+
+  <div class="result-card" id="resultCard">
+    <div class="result-header" id="resultHeader">
+      <span class="result-header-title" id="resultHeaderTitle"></span>
+      <div class="header-dots">
+        <div class="header-dot"></div>
+        <div class="header-dot"></div>
+        <div class="header-dot"></div>
+      </div>
+    </div>
+    <div class="result-body">
+      <p class="result-rank" id="resultRank"></p>
+      <p class="result-rank-en" id="resultRankEn"></p>
+      <div class="result-sections" id="resultSections"></div>
+      <p class="result-msg" id="resultMsg"></p>
+      <button class="again-btn" onclick="reset()">🎋 もういちどひく</button>
+    </div>
+  </div>
+</main>
+
+<script>
+  const OMIKUJI = [
+    {
+      rank: '大吉', en: 'GREAT LUCK', weight: 10,
+      headerGrad: 'linear-gradient(135deg, #f9a8d4, #c4b5fd)',
+      rankColor: '#7c3aed',
+      wish:    '今がいちばんのチャンス！積極的に行動すれば何でもうまくいく最高の運気✨',
+      love:    '💖 すてきな出会いや進展が期待できる！',
+      work:    '🌟 実力が認められる絶好の機会',
+      money:   '💰 臨時収入やラッキーな話が舞い込むかも',
+      health:  '🌸 体調バッチリ！',
+      lucky:   { color: 'ピンク 💗', number: String(Math.ceil(Math.random()*9)), item: '桜の花びら 🌸' },
+    },
+    {
+      rank: '中吉', en: 'GOOD LUCK', weight: 20,
+      headerGrad: 'linear-gradient(135deg, #86efac, #34d399)',
+      rankColor: '#059669',
+      wish:    '物事が順調に進む運気🌿 焦らずじっくりと取り組めば良い結果が出るよ',
+      love:    '🌱 じっくり育てることで愛が深まる',
+      work:    '📚 コツコツ努力が実を結ぶとき',
+      money:   '🌿 堅実に貯めると運気アップ',
+      health:  '😊 無理せずほどほどに♪',
+      lucky:   { color: 'みどり 💚', number: String(Math.ceil(Math.random()*9)), item: 'よつばのクローバー 🍀' },
+    },
+    {
+      rank: '小吉', en: 'SMALL LUCK', weight: 20,
+      headerGrad: 'linear-gradient(135deg, #fde68a, #fbbf24)',
+      rankColor: '#d97706',
+      wish:    '小さな幸せがたくさん集まる運気☀️ 日常の中のよろこびに気づいてみて',
+      love:    '🌼 さりげない優しさが大切',
+      work:    '☀️ 小さな前進を積み重ねよう',
+      money:   '🌻 節約と小さな楽しみのバランスを',
+      health:  '🍊 よく食べよく寝てね',
+      lucky:   { color: 'きいろ 💛', number: String(Math.ceil(Math.random()*9)), item: 'ひまわり 🌻' },
+    },
+    {
+      rank: '吉', en: 'LUCK', weight: 25,
+      headerGrad: 'linear-gradient(135deg, #93c5fd, #60a5fa)',
+      rankColor: '#2563eb',
+      wish:    'まずまずの運気🌤️ 自分を信じて明るく過ごすことで運が開けてくるよ',
+      love:    '💙 素直な気持ちを大切に',
+      work:    '🔵 ていねいな仕事が評価される',
+      money:   '💧 大きな出費は控えめに',
+      health:  '🌊 水をよく飲んでリフレッシュ',
+      lucky:   { color: 'あお 💙', number: String(Math.ceil(Math.random()*9)), item: 'しずく 💧' },
+    },
+    {
+      rank: '末吉', en: 'SMALL HOPE', weight: 15,
+      headerGrad: 'linear-gradient(135deg, #c4b5fd, #a78bfa)',
+      rankColor: '#7c3aed',
+      wish:    'これから運が上向いてくる予感🔮 今は準備の時期。種をまいておこう',
+      love:    '🌙 急がずゆっくりと距離を縮めて',
+      work:    '⭐ 今は学びのとき。下積みが大事',
+      money:   '🔮 今は使わずためておこう',
+      health:  '🌙 十分な睡眠が大切',
+      lucky:   { color: 'むらさき 💜', number: String(Math.ceil(Math.random()*9)), item: 'あめ玉 🍬' },
+    },
+    {
+      rank: '凶', en: 'BAD LUCK', weight: 8,
+      headerGrad: 'linear-gradient(135deg, #fca5a5, #f87171)',
+      rankColor: '#dc2626',
+      wish:    '気をつけどきだけど大丈夫🌈 ピンチはチャンス！慎重に行動すれば乗り越えられるよ',
+      love:    '🫶 相手を思いやることが大切',
+      work:    '🛡️ ミスに注意して確認を忘れずに',
+      money:   '🚨 衝動買いは要注意',
+      health:  '💊 体のサインを見逃さないで',
+      lucky:   { color: 'しろ 🤍', number: String(Math.ceil(Math.random()*9)), item: 'しろいはな 🌼' },
+    },
+    {
+      rank: '大凶', en: 'VERY BAD LUCK', weight: 2,
+      headerGrad: 'linear-gradient(135deg, #6b7280, #374151)',
+      rankColor: '#374151',
+      wish:    '今日は慎重に…でも落ち込まないで！🌟 大凶は一番運が上がる前のサイン。明日はきっとよくなるよ！',
+      love:    '🙏 今は自分を大切にする時期',
+      work:    '🌱 今だからこそ見直せることがある',
+      money:   '💪 節約を徹底しておくと安心',
+      health:  '🛁 ゆっくりお風呂につかってね',
+      lucky:   { color: 'ぎん 🩶', number: String(Math.ceil(Math.random()*9)), item: 'よもぎだんご 🍡' },
+    },
+  ];
+
+  // 重み付きランダム抽選
+  function pickOmikuji() {
+    const total = OMIKUJI.reduce((s, o) => s + o.weight, 0);
+    let r = Math.random() * total;
+    for (const o of OMIKUJI) {
+      r -= o.weight;
+      if (r <= 0) return o;
+    }
+    return OMIKUJI[0];
+  }
+
+  function launchConfetti(isGood) {
+    const symbols = isGood
+      ? ['💖','🎀','✨','🌸','💗','⭐','🎊','💕']
+      : ['🌼','🤍','🍀','💪','🌈','🌟'];
+    for (let i = 0; i < 35; i++) {
+      const el = document.createElement('div');
+      el.className = 'confetti';
+      el.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+      el.style.cssText = `left:${Math.random()*100}vw;--sz:${1+Math.random()}rem;--dur:${1.5+Math.random()*2}s;--delay:${Math.random()*0.6}s;--rot:${Math.random()*720-360}deg`;
+      document.body.appendChild(el);
+      el.addEventListener('animationend', () => el.remove());
+    }
+  }
+
+  function draw() {
+    const o = pickOmikuji();
+
+    // ヘッダー
+    document.getElementById('resultHeader').style.background = o.headerGrad;
+    document.getElementById('resultHeaderTitle').textContent = `🎋 ${o.rank}`;
+
+    // ランク
+    document.getElementById('resultRank').textContent = o.rank;
+    document.getElementById('resultRank').style.color = o.rankColor;
+    document.getElementById('resultRankEn').textContent = o.en;
+
+    // セクション
+    document.getElementById('resultSections').innerHTML = `
+      <div class="result-section">
+        <p class="section-title">🌸 れんあい</p>
+        <p class="section-value">${o.love}</p>
+      </div>
+      <div class="result-section">
+        <p class="section-title">💼 しごと・べんきょう</p>
+        <p class="section-value">${o.work}</p>
+      </div>
+      <div class="result-section">
+        <p class="section-title">💰 おかね</p>
+        <p class="section-value">${o.money}</p>
+      </div>
+      <div class="result-section">
+        <p class="section-title">💊 けんこう</p>
+        <p class="section-value">${o.health}</p>
+      </div>
+      <div class="result-section wide">
+        <p class="section-title">🍀 ラッキー</p>
+        <div class="lucky-item">
+          <span class="section-value">カラー：${o.lucky.color}　かず：${o.lucky.number}　アイテム：${o.lucky.item}</span>
+        </div>
+      </div>
+    `;
+
+    // メッセージ
+    document.getElementById('resultMsg').textContent = o.wish;
+
+    // 表示
+    document.getElementById('omikujiBox').style.display = 'none';
+    const card = document.getElementById('resultCard');
+    card.style.display = 'block';
+
+    // 紙吹雪
+    const isGood = ['大吉','中吉','小吉','吉'].includes(o.rank);
+    launchConfetti(isGood);
+  }
+
+  function reset() {
+    document.getElementById('omikujiBox').style.display = 'flex';
+    document.getElementById('resultCard').style.display = 'none';
+  }
+
+  // 背景パーティクル
+  const symbols = ['💗','🎀','💖','✨','🌸','💕'];
+  for (let i = 0; i < 20; i++) {
+    const el = document.createElement('div');
+    el.className = 'particle';
+    el.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+    el.style.cssText = `left:${Math.random()*100}%;bottom:-4rem;--sz:${1+Math.random()*1.2}rem;--dur:${7+Math.random()*8}s;--delay:${Math.random()*8}s;--rot:${Math.random()*60-30}deg`;
+    document.body.appendChild(el);
+  }
+</script>
+
+</body>
+</html>

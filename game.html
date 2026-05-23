@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <title>タイピングゲーム</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Kaisei+Decol:wght@700&family=Noto+Sans+JP:wght@400;700&family=JetBrains+Mono:wght@700&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(160deg, #ffd6e8 0%, #ffecd2 50%, #d4f1f9 100%);
+      font-family: 'Noto Sans JP', sans-serif;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 32px 20px 48px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    .bubble { position: fixed; border-radius: 50%; opacity: 0.2; animation: floatB var(--dur) ease-in-out infinite alternate; pointer-events: none; }
+    @keyframes floatB { from { transform: translateY(0); } to { transform: translateY(-24px); } }
+    .particle { position: fixed; pointer-events: none; font-size: var(--sz); animation: rise var(--dur) ease-in var(--delay) infinite; opacity: 0; z-index: 0; }
+    @keyframes rise { 0% { transform: translateY(0) rotate(0deg); opacity: 0; } 10% { opacity: 0.5; } 100% { transform: translateY(-100vh) rotate(var(--rot)); opacity: 0; } }
+
+    #backBtn {
+      position: fixed; top: 16px; left: 16px; z-index: 100;
+      background: rgba(255,255,255,0.78); backdrop-filter: blur(12px);
+      border: 2px solid rgba(255,255,255,0.9); border-radius: 20px;
+      padding: 8px 16px; font-family: 'Noto Sans JP', sans-serif;
+      font-weight: 700; font-size: 0.85rem; color: #e07aaa;
+      text-decoration: none; box-shadow: 0 4px 16px rgba(255,150,180,0.2); transition: all 0.2s;
+    }
+    #backBtn:hover { transform: translateY(-2px); }
+
+    main { position: relative; z-index: 1; width: 100%; max-width: 560px; }
+
+    h1 {
+      font-family: 'Kaisei Decol', serif; font-size: 1.8rem;
+      color: #e07aaa; text-align: center; margin-bottom: 6px;
+      letter-spacing: 2px; text-shadow: 0 2px 10px rgba(224,122,170,0.3);
+    }
+    .subtitle { text-align: center; color: #b0a0b8; font-size: 0.85rem; margin-bottom: 24px; }
+
+    .card {
+      background: rgba(255,255,255,0.82);
+      backdrop-filter: blur(20px);
+      border-radius: 28px;
+      border: 2px solid rgba(255,255,255,0.9);
+      box-shadow: 0 8px 40px rgba(255,150,180,0.2), 0 2px 0 rgba(255,255,255,0.9) inset;
+      padding: 28px;
+      margin-bottom: 14px;
+    }
+
+    /* ===== スタート画面 ===== */
+    #startScreen { text-align: center; }
+    .start-icon { font-size: 4rem; margin-bottom: 14px; animation: bounce 2s ease-in-out infinite; display: block; }
+    @keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+    .start-title { font-family: 'Kaisei Decol', serif; font-size: 1.3rem; color: #7c3aed; margin-bottom: 20px; }
+
+    .time-btns { display: flex; gap: 12px; justify-content: center; margin-bottom: 8px; }
+    .time-btn {
+      flex: 1; max-width: 140px;
+      border: 2px solid rgba(249,168,212,0.5);
+      border-radius: 20px; padding: 16px 10px;
+      font-family: 'Kaisei Decol', serif; font-size: 1.6rem;
+      color: #9a4a7a; background: rgba(253,242,248,0.8);
+      cursor: pointer; transition: all 0.2s ease;
+    }
+    .time-btn span { display: block; font-family: 'Noto Sans JP', sans-serif; font-size: 0.78rem; color: #c4a0c8; margin-top: 4px; }
+    .time-btn:hover { transform: translateY(-3px); border-color: #f472b6; box-shadow: 0 6px 20px rgba(244,114,182,0.25); }
+    .time-btn.selected { background: linear-gradient(135deg, rgba(249,168,212,0.4), rgba(196,181,253,0.4)); border-color: #f472b6; }
+
+    /* ===== ゲーム画面 ===== */
+    #gameScreen { display: none; }
+
+    .hud {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    .hud-item { text-align: center; }
+    .hud-label { font-size: 0.68rem; color: #c4a0c8; letter-spacing: 1px; margin-bottom: 2px; }
+    .hud-value { font-family: 'JetBrains Mono', monospace; font-size: 1.6rem; font-weight: 700; }
+    .hud-value.time { color: #7c3aed; }
+    .hud-value.correct { color: #10b981; }
+    .hud-value.miss { color: #f43f5e; }
+
+    /* タイムバー */
+    .timebar-bg { height: 8px; background: rgba(249,168,212,0.25); border-radius: 8px; margin-bottom: 18px; overflow: hidden; }
+    .timebar-fill { height: 100%; border-radius: 8px; background: linear-gradient(90deg, #f9a8d4, #f472b6); transition: width 0.25s linear; }
+
+    /* ワード表示エリア */
+    .word-area {
+      background: linear-gradient(135deg, rgba(253,242,248,0.8), rgba(237,233,254,0.8));
+      border-radius: 20px;
+      border: 1px solid rgba(249,168,212,0.3);
+      padding: 20px;
+      margin-bottom: 16px;
+      min-height: 90px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .word-jp { font-size: 0.85rem; color: #c4a0c8; letter-spacing: 1px; }
+    .word-en {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.8rem;
+      font-weight: 700;
+      letter-spacing: 3px;
+      color: #7a4a6a;
+    }
+    .word-en .typed { color: #10b981; }
+    .word-en .current { color: #f472b6; border-bottom: 3px solid #f472b6; }
+    .word-en .remaining { color: #c4a0c8; }
+
+    /* 入力欄 */
+    #typeInput {
+      width: 100%;
+      background: rgba(255,240,248,0.8);
+      border: 2px solid #f9b8d4;
+      border-radius: 16px;
+      padding: 14px 20px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.2rem; font-weight: 700;
+      color: #7a4a6a; outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      text-align: center;
+      letter-spacing: 2px;
+    }
+    #typeInput:focus { border-color: #e07aaa; box-shadow: 0 0 0 4px rgba(224,122,170,0.15); }
+    #typeInput.shake { animation: shake 0.25s ease; }
+    @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+
+    /* 次のワードプレビュー */
+    .next-words { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 12px; }
+    .next-word { font-size: 0.78rem; color: #c4a0c8; background: rgba(255,240,248,0.6); border-radius: 10px; padding: 3px 10px; }
+
+    /* ===== 結果画面 ===== */
+    #resultScreen { display: none; text-align: center; }
+    .result-header-bar {
+      background: linear-gradient(135deg, #f9a8d4, #c4b5fd);
+      border-radius: 20px 20px 0 0;
+      margin: -28px -28px 24px;
+      padding: 14px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .result-header-bar span { font-family: 'Kaisei Decol', serif; color: white; font-size: 0.95rem; letter-spacing: 1px; }
+    .result-dots { display: flex; gap: 5px; }
+    .result-dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.6); }
+    .result-dot:first-child { background: rgba(255,255,255,0.95); }
+
+    .result-big { font-family: 'JetBrains Mono', monospace; font-size: 3.5rem; font-weight: 700; color: #7c3aed; margin-bottom: 4px; }
+    .result-label { font-size: 0.8rem; color: #c4a0c8; letter-spacing: 2px; margin-bottom: 24px; }
+
+    .result-grid {
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px; margin-bottom: 24px;
+    }
+    .result-stat {
+      background: rgba(253,242,248,0.7);
+      border-radius: 16px; padding: 14px 10px;
+      border: 1px solid rgba(249,168,212,0.3);
+    }
+    .result-stat-label { font-size: 0.68rem; color: #c4a0c8; letter-spacing: 1px; margin-bottom: 4px; }
+    .result-stat-value { font-family: 'JetBrains Mono', monospace; font-size: 1.4rem; font-weight: 700; color: #7c3aed; }
+    .result-stat-value.red { color: #f43f5e; }
+    .result-stat-value.green { color: #10b981; }
+
+    .result-comment {
+      font-size: 0.88rem; color: #9a7aaa; line-height: 1.8;
+      background: rgba(253,242,248,0.6); border-radius: 16px;
+      padding: 14px 18px; border: 1px solid rgba(249,168,212,0.25);
+      margin-bottom: 20px;
+    }
+
+    .btn-row { display: flex; gap: 10px; }
+    .btn {
+      flex: 1; border: none; border-radius: 16px; padding: 13px;
+      font-size: 0.95rem; font-weight: 700; font-family: 'Noto Sans JP', sans-serif;
+      cursor: pointer; transition: all 0.2s; letter-spacing: 1px; color: white;
+    }
+    .btn-pink { background: linear-gradient(135deg, #f9a8d4, #f472b6); box-shadow: 0 4px 14px rgba(244,114,182,0.4); }
+    .btn-pink:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(244,114,182,0.6); }
+    .btn-purple { background: linear-gradient(135deg, #c4b5fd, #a78bfa); box-shadow: 0 4px 14px rgba(167,139,250,0.4); }
+    .btn-purple:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(167,139,250,0.6); }
+    .btn:active { transform: none !important; }
+
+    /* 紙吹雪 */
+    .confetti { position: fixed; pointer-events: none; font-size: var(--sz); animation: cfall var(--dur) ease-in var(--delay) forwards; opacity: 0; z-index: 999; }
+    @keyframes cfall { 0% { transform: translateY(-10px) rotate(0deg); opacity: 1; } 100% { transform: translateY(110vh) rotate(var(--rot)); opacity: 0; } }
+  </style>
+</head>
+<body>
+
+<div class="bubble" style="width:280px;height:280px;background:#ffd6e8;top:-80px;left:-80px;--dur:6s"></div>
+<div class="bubble" style="width:180px;height:180px;background:#ffc0d4;bottom:-50px;right:-40px;--dur:8s"></div>
+
+<a href="index.html" id="backBtn">🏠 もどる</a>
+
+<main>
+  <h1>⌨️ タイピング</h1>
+  <p class="subtitle">どれだけ速くうてるかな？</p>
+
+  <!-- スタート画面 -->
+  <div class="card" id="startScreen">
+    <span class="start-icon">⌨️</span>
+    <p class="start-title">じかんをえらんでスタート！</p>
+    <div class="time-btns">
+      <button class="time-btn" id="btn30" onclick="selectTime(30)">
+        30<small>秒</small>
+        <span>かるく1ゲーム</span>
+      </button>
+      <button class="time-btn" id="btn60" onclick="selectTime(60)">
+        60<small>秒</small>
+        <span>しっかり挑戦</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ゲーム画面 -->
+  <div class="card" id="gameScreen">
+    <div class="hud">
+      <div class="hud-item">
+        <p class="hud-label">⏱ のこり</p>
+        <p class="hud-value time" id="hudTime">--</p>
+      </div>
+      <div class="hud-item">
+        <p class="hud-label">✅ せいかい</p>
+        <p class="hud-value correct" id="hudCorrect">0</p>
+      </div>
+      <div class="hud-item">
+        <p class="hud-label">❌ ミス</p>
+        <p class="hud-value miss" id="hudMiss">0</p>
+      </div>
+    </div>
+
+    <div class="timebar-bg">
+      <div class="timebar-fill" id="timebarFill" style="width:100%"></div>
+    </div>
+
+    <div class="word-area">
+      <p class="word-jp" id="wordJp"></p>
+      <p class="word-en" id="wordEn"></p>
+    </div>
+
+    <input type="text" id="typeInput" placeholder="ここにうってね…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+
+    <div class="next-words" id="nextWords"></div>
+  </div>
+
+  <!-- 結果画面 -->
+  <div class="card" id="resultScreen">
+    <div class="result-header-bar">
+      <span>🎉 けっか</span>
+      <div class="result-dots"><div class="result-dot"></div><div class="result-dot"></div><div class="result-dot"></div></div>
+    </div>
+    <p class="result-big" id="resultWpm"></p>
+    <p class="result-label">WPM（1分あたりのワード数）</p>
+    <div class="result-grid">
+      <div class="result-stat">
+        <p class="result-stat-label">✅ せいかいワード</p>
+        <p class="result-stat-value green" id="resultCorrect"></p>
+      </div>
+      <div class="result-stat">
+        <p class="result-stat-label">❌ ミスタイプ</p>
+        <p class="result-stat-value red" id="resultMiss"></p>
+      </div>
+      <div class="result-stat">
+        <p class="result-stat-label">🎯 せいかくさ</p>
+        <p class="result-stat-value" id="resultAccuracy"></p>
+      </div>
+    </div>
+    <p class="result-comment" id="resultComment"></p>
+    <div class="btn-row">
+      <button class="btn btn-purple" id="retryBtn" onclick="retry()">🔄 もういちど</button>
+      <button class="btn btn-pink" onclick="goStart()">⏱ じかんを変える</button>
+    </div>
+  </div>
+</main>
+
+<script>
+  const WORDS = [
+    { en: 'apple',    jp: 'りんご' },
+    { en: 'banana',   jp: 'バナナ' },
+    { en: 'orange',   jp: 'オレンジ' },
+    { en: 'grape',    jp: 'ぶどう' },
+    { en: 'melon',    jp: 'メロン' },
+    { en: 'cherry',   jp: 'さくらんぼ' },
+    { en: 'strawberry', jp: 'いちご' },
+    { en: 'peach',    jp: 'もも' },
+    { en: 'lemon',    jp: 'レモン' },
+    { en: 'cat',      jp: 'ねこ' },
+    { en: 'dog',      jp: 'いぬ' },
+    { en: 'rabbit',   jp: 'うさぎ' },
+    { en: 'panda',    jp: 'パンダ' },
+    { en: 'tiger',    jp: 'とら' },
+    { en: 'bird',     jp: 'とり' },
+    { en: 'fish',     jp: 'さかな' },
+    { en: 'flower',   jp: 'はな' },
+    { en: 'tree',     jp: 'き' },
+    { en: 'star',     jp: 'ほし' },
+    { en: 'moon',     jp: 'つき' },
+    { en: 'sun',      jp: 'たいよう' },
+    { en: 'cloud',    jp: 'くも' },
+    { en: 'rain',     jp: 'あめ' },
+    { en: 'snow',     jp: 'ゆき' },
+    { en: 'wind',     jp: 'かぜ' },
+    { en: 'sky',      jp: 'そら' },
+    { en: 'sea',      jp: 'うみ' },
+    { en: 'mountain', jp: 'やま' },
+    { en: 'river',    jp: 'かわ' },
+    { en: 'school',   jp: 'がっこう' },
+    { en: 'book',     jp: 'ほん' },
+    { en: 'music',    jp: 'おんがく' },
+    { en: 'dance',    jp: 'ダンス' },
+    { en: 'game',     jp: 'ゲーム' },
+    { en: 'friend',   jp: 'ともだち' },
+    { en: 'dream',    jp: 'ゆめ' },
+    { en: 'happy',    jp: 'しあわせ' },
+    { en: 'love',     jp: 'あい' },
+    { en: 'smile',    jp: 'えがお' },
+    { en: 'heart',    jp: 'こころ' },
+    { en: 'pink',     jp: 'ピンク' },
+    { en: 'white',    jp: 'しろ' },
+    { en: 'blue',     jp: 'あお' },
+    { en: 'green',    jp: 'みどり' },
+    { en: 'magic',    jp: 'まほう' },
+    { en: 'rainbow',  jp: 'にじ' },
+    { en: 'sleep',    jp: 'ねむる' },
+    { en: 'eat',      jp: 'たべる' },
+    { en: 'run',      jp: 'はしる' },
+    { en: 'jump',     jp: 'とぶ' },
+  ];
+
+  let selectedTime = 30;
+  let timeLeft = 30;
+  let timerInterval = null;
+  let correctCount = 0;
+  let missCount = 0;
+  let queue = [];
+  let typed = '';
+
+  function selectTime(sec) {
+    selectedTime = sec;
+    document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('selected'));
+    document.getElementById('btn' + sec).classList.add('selected');
+    setTimeout(() => startGame(), 180);
+  }
+
+  function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function buildQueue() {
+    // シャッフルして十分な量を用意
+    queue = [...shuffle(WORDS), ...shuffle(WORDS), ...shuffle(WORDS)];
+  }
+
+  function startGame() {
+    document.getElementById('startScreen').style.display = 'none';
+    document.getElementById('resultScreen').style.display = 'none';
+    document.getElementById('gameScreen').style.display = 'block';
+
+    correctCount = 0;
+    missCount = 0;
+    timeLeft = selectedTime;
+    typed = '';
+
+    buildQueue();
+    updateHud();
+    renderWord();
+    renderNext();
+
+    document.getElementById('typeInput').value = '';
+    document.getElementById('typeInput').focus();
+
+    clearInterval(timerInterval);
+    timerInterval = setInterval(tick, 250);
+  }
+
+  function tick() {
+    timeLeft -= 0.25;
+    if (timeLeft <= 0) {
+      timeLeft = 0;
+      clearInterval(timerInterval);
+      endGame();
+    }
+    updateHud();
+  }
+
+  function updateHud() {
+    document.getElementById('hudTime').textContent = Math.ceil(timeLeft);
+    document.getElementById('hudCorrect').textContent = correctCount;
+    document.getElementById('hudMiss').textContent = missCount;
+    const pct = (timeLeft / selectedTime) * 100;
+    document.getElementById('timebarFill').style.width = pct + '%';
+    // 残り少なくなったら赤く
+    const fill = document.getElementById('timebarFill');
+    fill.style.background = pct < 25
+      ? 'linear-gradient(90deg,#fca5a5,#f43f5e)'
+      : pct < 50
+        ? 'linear-gradient(90deg,#fde68a,#fb923c)'
+        : 'linear-gradient(90deg,#f9a8d4,#f472b6)';
+  }
+
+  function renderWord() {
+    if (queue.length === 0) buildQueue();
+    const word = queue[0];
+    document.getElementById('wordJp').textContent = word.jp;
+
+    const target = word.en;
+    let html = '';
+    for (let i = 0; i < target.length; i++) {
+      if (i < typed.length) {
+        html += `<span class="typed">${target[i]}</span>`;
+      } else if (i === typed.length) {
+        html += `<span class="current">${target[i]}</span>`;
+      } else {
+        html += `<span class="remaining">${target[i]}</span>`;
+      }
+    }
+    document.getElementById('wordEn').innerHTML = html;
+  }
+
+  function renderNext() {
+    const next = queue.slice(1, 4);
+    document.getElementById('nextWords').innerHTML =
+      next.map(w => `<span class="next-word">${w.en}</span>`).join('');
+  }
+
+  document.getElementById('typeInput').addEventListener('input', function () {
+    if (timeLeft <= 0) return;
+
+    const val = this.value;
+    const target = queue[0].en;
+
+    // 正しいプレフィックスかチェック
+    if (target.startsWith(val)) {
+      typed = val;
+      renderWord();
+
+      // ワード完成
+      if (val === target) {
+        correctCount++;
+        queue.shift();
+        typed = '';
+        this.value = '';
+        updateHud();
+        renderWord();
+        renderNext();
+      }
+    } else {
+      // ミス
+      missCount++;
+      updateHud();
+      this.classList.add('shake');
+      setTimeout(() => this.classList.remove('shake'), 260);
+      // 正しいプレフィックスに戻す
+      this.value = typed;
+    }
+  });
+
+  function endGame() {
+    document.getElementById('gameScreen').style.display = 'none';
+    document.getElementById('resultScreen').style.display = 'block';
+
+    const wpm = Math.round((correctCount / selectedTime) * 60);
+    const totalAttempts = correctCount + missCount;
+    const accuracy = totalAttempts > 0
+      ? Math.round((correctCount / totalAttempts) * 100)
+      : 100;
+
+    document.getElementById('resultWpm').textContent = wpm;
+    document.getElementById('resultCorrect').textContent = correctCount + '語';
+    document.getElementById('resultMiss').textContent = missCount + '回';
+    document.getElementById('resultAccuracy').textContent = accuracy + '%';
+    document.getElementById('retryBtn').textContent = `🔄 もう一度（${selectedTime}秒）`;
+
+    // コメント
+    let comment = '';
+    if (wpm >= 60)       comment = '🌟 すごい！プロ級のタイピング速度だよ！この調子で続けてね！';
+    else if (wpm >= 40)  comment = '✨ とっても上手！練習すればもっと速くなれるよ！';
+    else if (wpm >= 25)  comment = '🌸 いい感じ！コツをつかんできたんじゃないかな？';
+    else if (wpm >= 10)  comment = '💪 よくがんばったね！続けることが上達への近道だよ！';
+    else                 comment = '🎀 はじめはみんなゆっくり。焦らず練習していこうね♪';
+
+    if (accuracy < 80 && totalAttempts > 5) {
+      comment += '\n\n⚠️ ミスが多め…スピードより正確さを意識して打つと上達が早いよ！';
+    }
+    document.getElementById('resultComment').textContent = comment;
+
+    // 紙吹雪
+    const symbols = wpm >= 30
+      ? ['🎉','✨','💖','🎀','⭐','💗']
+      : ['💪','🌸','🎀','✨'];
+    for (let i = 0; i < 30; i++) {
+      const el = document.createElement('div');
+      el.className = 'confetti';
+      el.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+      el.style.cssText = `left:${Math.random()*100}vw;--sz:${0.9+Math.random()}rem;--dur:${1.5+Math.random()*2}s;--delay:${Math.random()*0.5}s;--rot:${Math.random()*720-360}deg`;
+      document.body.appendChild(el);
+      el.addEventListener('animationend', () => el.remove());
+    }
+  }
+
+  function retry() {
+    startGame();
+  }
+
+  function goStart() {
+    clearInterval(timerInterval);
+    document.getElementById('gameScreen').style.display = 'none';
+    document.getElementById('resultScreen').style.display = 'none';
+    document.getElementById('startScreen').style.display = 'block';
+  }
+
+  // 背景パーティクル
+  const ptSymbols = ['💗','🎀','✨','💖','🌸'];
+  for (let i = 0; i < 16; i++) {
+    const el = document.createElement('div');
+    el.className = 'particle';
+    el.textContent = ptSymbols[Math.floor(Math.random() * ptSymbols.length)];
+    el.style.cssText = `left:${Math.random()*100}%;bottom:-4rem;--sz:${1+Math.random()}rem;--dur:${7+Math.random()*8}s;--delay:${Math.random()*8}s;--rot:${Math.random()*60-30}deg`;
+    document.body.appendChild(el);
+  }
+</script>
+
+</body>
+</html>

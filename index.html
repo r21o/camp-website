@@ -21,10 +21,24 @@
       overflow-x: hidden;
     }
 
-    .bubble { position: fixed; border-radius: 50%; opacity: 0.22; animation: float var(--dur) ease-in-out infinite alternate; pointer-events: none; }
-    @keyframes float { from { transform: translateY(0) scale(1); } to { transform: translateY(-28px) scale(1.05); } }
-    .deco { position: fixed; font-size: var(--sz); animation: spin var(--dur) linear infinite; opacity: 0.15; pointer-events: none; }
-    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .bubble { position: fixed; border-radius: 50%; opacity: 0.22; animation: floatBubble var(--dur) ease-in-out infinite alternate; pointer-events: none; }
+    @keyframes floatBubble { from { transform: translateY(0) scale(1); } to { transform: translateY(-28px) scale(1.05); } }
+
+    /* 背景パーティクル */
+    .particle {
+      position: fixed;
+      pointer-events: none;
+      font-size: var(--sz);
+      animation: rise var(--dur) ease-in var(--delay) infinite;
+      opacity: 0;
+      z-index: 0;
+    }
+    @keyframes rise {
+      0%   { transform: translateY(0) rotate(0deg) scale(0.8);   opacity: 0; }
+      10%  { opacity: 0.7; }
+      80%  { opacity: 0.4; }
+      100% { transform: translateY(-100vh) rotate(var(--rot)) scale(1.2); opacity: 0; }
+    }
 
     main {
       position: relative;
@@ -141,19 +155,6 @@
 <div class="bubble" style="width:300px;height:300px;background:#ffd6e8;top:-80px;left:-80px;--dur:6s"></div>
 <div class="bubble" style="width:200px;height:200px;background:#ffc0d4;bottom:-60px;right:-40px;--dur:8s"></div>
 <div class="bubble" style="width:140px;height:140px;background:#ffecd2;top:40%;left:76%;--dur:7s"></div>
-<div class="deco" style="top:4%;left:4%;--sz:2.8rem;--dur:12s">🎀</div>
-<div class="deco" style="top:18%;left:2%;--sz:2rem;--dur:9s">💗</div>
-<div class="deco" style="top:38%;left:1%;--sz:1.8rem;--dur:14s">🎀</div>
-<div class="deco" style="top:58%;left:3%;--sz:2.4rem;--dur:11s">💖</div>
-<div class="deco" style="top:75%;left:1%;--sz:1.6rem;--dur:17s">🎀</div>
-<div class="deco" style="top:88%;left:5%;--sz:2rem;--dur:13s">💝</div>
-<div class="deco" style="top:4%;right:4%;--sz:2.2rem;--dur:10s">💗</div>
-<div class="deco" style="top:20%;right:2%;--sz:2.8rem;--dur:15s">🎀</div>
-<div class="deco" style="top:40%;right:1%;--sz:2rem;--dur:8s">💖</div>
-<div class="deco" style="top:60%;right:3%;--sz:2.6rem;--dur:12s">🎀</div>
-<div class="deco" style="top:78%;right:2%;--sz:1.8rem;--dur:16s">💗</div>
-<div class="deco" style="top:92%;right:5%;--sz:2.2rem;--dur:11s">💝</div>
-<div class="deco" style="top:50%;left:48%;--sz:1.4rem;--dur:20s">🎀</div>
 
 <main>
 
@@ -209,10 +210,36 @@
       <span class="link-icon">🌿</span>
       <span class="link-label">ピクミン図鑑</span>
     </a>
+    <a href="omikuji.html" class="link-card">
+      <span class="link-icon">🎋</span>
+      <span class="link-label">おみくじ</span>
+    </a>
+    <a href="game.html" class="link-card">
+      <span class="link-icon">⌨️</span>
+      <span class="link-label">タイピング</span>
+    </a>
   </div>
 
   <p class="footer-deco">💖 🎀 💗 🎀 💖 🎀 💗 🎀 💖</p>
 </main>
 
+<script>
+  const symbols = ['💗','🎀','💖','💝','✨','💕','🌸','💓'];
+  const sizes   = ['1.2rem','1.5rem','1.8rem','2rem','2.4rem'];
+
+  for (let i = 0; i < 28; i++) {
+    const el = document.createElement('div');
+    el.className = 'particle';
+    const sym  = symbols[Math.floor(Math.random() * symbols.length)];
+    const sz   = sizes[Math.floor(Math.random() * sizes.length)];
+    const left = Math.random() * 100;
+    const dur  = (6 + Math.random() * 10).toFixed(1) + 's';
+    const delay = (Math.random() * 10).toFixed(1) + 's';
+    const rot  = (Math.random() * 60 - 30).toFixed(0) + 'deg';
+    el.textContent = sym;
+    el.style.cssText = `left:${left}%;bottom:-4rem;--sz:${sz};--dur:${dur};--delay:${delay};--rot:${rot}`;
+    document.body.appendChild(el);
+  }
+</script>
 </body>
 </html>
