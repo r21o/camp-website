@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <title>数当てゲーム</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Kaisei+Decol:wght@700&family=Noto+Sans+JP:wght@400;700&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(160deg, #ffd6e8 0%, #ffecd2 40%, #d4f1f9 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Noto Sans JP', sans-serif;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* 浮かぶ背景の図形 */
+    .bubble {
+      position: fixed;
+      border-radius: 50%;
+      opacity: 0.25;
+      animation: float var(--dur) ease-in-out infinite alternate;
+      pointer-events: none;
+    }
+    @keyframes float {
+      from { transform: translateY(0) scale(1); }
+      to   { transform: translateY(-30px) scale(1.05); }
+    }
+
+    .deco {
+      position: fixed;
+      font-size: var(--sz);
+      animation: spin var(--dur) linear infinite;
+      opacity: 0.18;
+      pointer-events: none;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    main {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 440px;
+      padding: 20px;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.75);
+      backdrop-filter: blur(20px);
+      border-radius: 36px;
+      padding: 40px 36px 36px;
+      box-shadow:
+        0 8px 40px rgba(255, 150, 180, 0.25),
+        0 2px 0 rgba(255,255,255,0.9) inset;
+      border: 2px solid rgba(255,255,255,0.85);
+      text-align: center;
+    }
+
+    .mascot {
+      font-size: 4rem;
+      margin-bottom: 6px;
+      display: block;
+      animation: bounce 2s ease-in-out infinite;
+    }
+    @keyframes bounce {
+      0%,100% { transform: translateY(0); }
+      50%      { transform: translateY(-10px); }
+    }
+
+    h1 {
+      font-family: 'Kaisei Decol', serif;
+      font-size: 1.7rem;
+      color: #e07aaa;
+      margin-bottom: 4px;
+      letter-spacing: 2px;
+      text-shadow: 0 2px 8px rgba(224,122,170,0.3);
+    }
+
+    .subtitle {
+      color: #b0a0b8;
+      font-size: 0.82rem;
+      margin-bottom: 24px;
+      letter-spacing: 1px;
+    }
+
+    /* ライフハート */
+    .hearts {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: 24px;
+    }
+    .heart {
+      font-size: 1.8rem;
+      transition: all 0.4s cubic-bezier(.34,1.56,.64,1);
+      filter: drop-shadow(0 2px 6px rgba(255,100,150,0.5));
+    }
+    .heart.lost {
+      filter: grayscale(1) opacity(0.25);
+      transform: scale(0.7);
+    }
+
+    /* 入力エリア */
+    .input-wrap {
+      position: relative;
+      margin-bottom: 14px;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      background: rgba(255,240,248,0.8);
+      border: 2px solid #f9b8d4;
+      border-radius: 20px;
+      padding: 16px 120px 16px 20px;
+      color: #7a4a6a;
+      font-size: 1.15rem;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-weight: 700;
+      outline: none;
+      transition: border-color 0.3s, box-shadow 0.3s;
+      text-align: center;
+    }
+    input[type="number"]:focus {
+      border-color: #e07aaa;
+      box-shadow: 0 0 0 4px rgba(224,122,170,0.15);
+    }
+    input[type="number"]:disabled { opacity: 0.5; }
+    input[type="number"]::-webkit-inner-spin-button { opacity: 0.3; }
+
+    button {
+      position: absolute;
+      right: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: linear-gradient(135deg, #f9a8d4, #f472b6);
+      border: none;
+      border-radius: 14px;
+      padding: 10px 18px;
+      color: white;
+      font-size: 0.95rem;
+      font-weight: 700;
+      font-family: 'Noto Sans JP', sans-serif;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(244,114,182,0.5);
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    button:hover:not(:disabled) {
+      transform: translateY(calc(-50% - 2px));
+      box-shadow: 0 6px 20px rgba(244,114,182,0.6);
+    }
+    button:active:not(:disabled) { transform: translateY(-50%); }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    #resetBtn {
+      position: static;
+      transform: none;
+      display: block;
+      width: 100%;
+      margin-top: 12px;
+      background: linear-gradient(135deg, #fde68a, #fb923c);
+      box-shadow: 0 4px 14px rgba(251,146,60,0.4);
+      padding: 12px;
+      border-radius: 20px;
+    }
+    #resetBtn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(251,146,60,0.6);
+    }
+    #resetBtn:active { transform: none; }
+
+    /* 結果メッセージ */
+    #guessResult {
+      min-height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 20px;
+      padding: 14px 20px;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #9a7aaa;
+      background: rgba(255,240,248,0.6);
+      border: 2px dashed #f9b8d4;
+      transition: all 0.4s ease;
+      letter-spacing: 0.5px;
+    }
+    #guessResult.correct {
+      background: linear-gradient(135deg, rgba(167,243,208,0.4), rgba(110,231,183,0.3));
+      border: 2px solid #6ee7b7;
+      color: #059669;
+      animation: wobbly 0.5s ease, pulse-green 1.2s ease-in-out infinite alternate;
+    }
+    #guessResult.gameover {
+      background: rgba(254,202,202,0.4);
+      border: 2px solid #fca5a5;
+      color: #dc2626;
+      animation: shake 0.5s ease;
+    }
+    #guessResult.hint-up {
+      background: rgba(224,231,255,0.5);
+      border: 2px dashed #a5b4fc;
+      color: #6366f1;
+    }
+    #guessResult.hint-down {
+      background: rgba(254,243,199,0.6);
+      border: 2px dashed #fcd34d;
+      color: #d97706;
+    }
+
+    @keyframes wobbly {
+      0%   { transform: scale(1); }
+      30%  { transform: scale(1.06); }
+      60%  { transform: scale(0.97); }
+      100% { transform: scale(1); }
+    }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      20%,60% { transform: translateX(-6px); }
+      40%,80% { transform: translateX(6px); }
+    }
+    @keyframes pulse-green {
+      from { box-shadow: 0 0 10px rgba(110,231,183,0.3); }
+      to   { box-shadow: 0 0 28px rgba(110,231,183,0.7); }
+    }
+
+    /* 紙吹雪 */
+    .confetti-piece {
+      position: fixed;
+      width: 10px; height: 10px;
+      top: -14px;
+      border-radius: 50%;
+      animation: fall linear forwards;
+      z-index: 999;
+      pointer-events: none;
+    }
+    @keyframes fall {
+      to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- 背景バブル -->
+<div class="bubble" style="width:300px;height:300px;background:#ffd6e8;top:-80px;left:-80px;--dur:6s"></div>
+<div class="bubble" style="width:200px;height:200px;background:#c7f2fa;bottom:-60px;right:-40px;--dur:8s"></div>
+<div class="bubble" style="width:150px;height:150px;background:#ffecd2;top:40%;left:75%;--dur:7s"></div>
+<div class="deco" style="top:10%;left:8%;--sz:3rem;--dur:12s">🌸</div>
+<div class="deco" style="top:70%;left:5%;--sz:2.5rem;--dur:16s">⭐</div>
+<div class="deco" style="top:15%;right:8%;--sz:2.8rem;--dur:10s">🍭</div>
+<div class="deco" style="bottom:15%;right:10%;--sz:3rem;--dur:14s">🎀</div>
+<div class="deco" style="bottom:10%;left:40%;--sz:2rem;--dur:18s">✨</div>
+
+<main>
+  <div class="card">
+    <span class="mascot" id="mascot">🐰</span>
+    <h1>かずあてゲーム</h1>
+    <p class="subtitle">1 〜 20 のかずをあててね♪</p>
+
+    <div class="hearts" id="hearts"></div>
+
+    <div class="input-wrap">
+      <input type="number" min="1" max="20" id="guessField" placeholder="すうじをいれてね">
+      <button id="guessSubmit">予想！🎯</button>
+    </div>
+
+    <p id="guessResult">がんばって！✨</p>
+    <button id="resetBtn">🔄 もういちどあそぶ！</button>
+  </div>
+</main>
+
+<script>
+  const MAX_ATTEMPTS = 5;
+  let answerNumber = Math.floor(Math.random() * 20) + 1;
+  console.log('正解は' + answerNumber);
+  let remainingAttempts = MAX_ATTEMPTS;
+
+  const guessField  = document.querySelector('#guessField');
+  const guessSubmit = document.querySelector('#guessSubmit');
+  const guessResult = document.querySelector('#guessResult');
+  const heartsEl    = document.querySelector('#hearts');
+  const mascot      = document.querySelector('#mascot');
+  const resetBtn    = document.querySelector('#resetBtn');
+
+  const mascots = { idle: '🐰', correct: '🎉', gameover: '😢', up: '⬆️', down: '⬇️' };
+
+  function renderHearts() {
+    heartsEl.innerHTML = '';
+    for (let i = 0; i < MAX_ATTEMPTS; i++) {
+      const h = document.createElement('span');
+      h.className = 'heart' + (i >= remainingAttempts ? ' lost' : '');
+      h.textContent = '🩷';
+      heartsEl.appendChild(h);
+    }
+  }
+
+  function launchConfetti() {
+    const shapes = ['🌸','⭐','🎀','💖','🍬','✨'];
+    for (let i = 0; i < 40; i++) {
+      const c = document.createElement('div');
+      c.className = 'confetti-piece';
+      c.style.cssText = `left:${Math.random()*100}vw;font-size:${1+Math.random()*1.2}rem;background:none;animation-duration:${1.8+Math.random()*2}s;animation-delay:${Math.random()*0.6}s`;
+      c.textContent = shapes[Math.floor(Math.random()*shapes.length)];
+      document.body.appendChild(c);
+      c.addEventListener('animationend', () => c.remove());
+    }
+  }
+
+  function endGame(message, type) {
+    guessResult.textContent = message;
+    guessResult.className = type;
+    guessSubmit.disabled = true;
+    guessField.disabled = true;
+    mascot.textContent = mascots[type] || mascots.idle;
+    if (type === 'correct') launchConfetti();
+  }
+
+  function checkGuess() {
+    const userGuess = Number(guessField.value);
+    if (!userGuess) return;
+    remainingAttempts--;
+    renderHearts();
+
+    if (userGuess === answerNumber) {
+      endGame('🎉 せいかい！' + answerNumber + ' だよ！すごーい！', 'correct');
+    } else if (remainingAttempts === 0) {
+      endGame('😢 ゲームオーバー…こたえは ' + answerNumber + ' だったよ', 'gameover');
+    } else if (userGuess < answerNumber) {
+      guessResult.textContent = '⬆️ もっとおおきいよ！（のこり' + remainingAttempts + 'かい）';
+      guessResult.className = 'hint-up';
+      mascot.textContent = mascots.up;
+    } else {
+      guessResult.textContent = '⬇️ もっとちいさいよ！（のこり' + remainingAttempts + 'かい）';
+      guessResult.className = 'hint-down';
+      mascot.textContent = mascots.down;
+    }
+
+    guessField.value = '';
+    guessField.focus();
+  }
+
+  function resetGame() {
+    answerNumber = Math.floor(Math.random() * 20) + 1;
+    console.log('正解は' + answerNumber);
+    remainingAttempts = MAX_ATTEMPTS;
+    guessField.disabled = false;
+    guessSubmit.disabled = false;
+    guessField.value = '';
+    guessResult.textContent = 'がんばって！✨';
+    guessResult.className = '';
+    mascot.textContent = mascots.idle;
+    renderHearts();
+    guessField.focus();
+  }
+
+  guessSubmit.addEventListener('click', checkGuess);
+  guessField.addEventListener('keydown', e => { if (e.key === 'Enter') checkGuess(); });
+  resetBtn.addEventListener('click', resetGame);
+
+  renderHearts();
+</script>
+
+</body>
+</html>
