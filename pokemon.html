@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <title>今日のポケモン</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Kaisei+Decol:wght@700&family=Noto+Sans+JP:wght@400;700&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(160deg, #ffd6e8 0%, #ffecd2 50%, #d4f1f9 100%);
+      font-family: 'Noto Sans JP', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow-x: hidden;
+      position: relative;
+      padding: 24px 0;
+    }
+
+    .bubble {
+      position: fixed;
+      border-radius: 50%;
+      opacity: 0.22;
+      animation: float var(--dur) ease-in-out infinite alternate;
+      pointer-events: none;
+    }
+    @keyframes float {
+      from { transform: translateY(0) scale(1); }
+      to   { transform: translateY(-28px) scale(1.05); }
+    }
+
+    .deco {
+      position: fixed;
+      font-size: var(--sz);
+      animation: spin var(--dur) linear infinite;
+      opacity: 0.15;
+      pointer-events: none;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    main {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 400px;
+      padding: 0 24px;
+      text-align: center;
+    }
+
+    h1 {
+      font-family: 'Kaisei Decol', serif;
+      font-size: 1.8rem;
+      color: #e07aaa;
+      margin-bottom: 20px;
+      letter-spacing: 2px;
+      text-shadow: 0 2px 10px rgba(224,122,170,0.3);
+    }
+
+    .pokedex-card {
+      background: rgba(255,255,255,0.82);
+      backdrop-filter: blur(20px);
+      border-radius: 32px;
+      border: 2px solid rgba(255,255,255,0.9);
+      box-shadow: 0 8px 40px rgba(255,150,180,0.25), 0 2px 0 rgba(255,255,255,0.9) inset;
+      overflow: hidden;
+    }
+
+    .card-header {
+      background: linear-gradient(135deg, #f9a8d4, #c4b5fd);
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-header .number {
+      font-family: 'Kaisei Decol', serif;
+      color: white;
+      font-size: 0.95rem;
+      letter-spacing: 1px;
+    }
+    .card-header .dots { display: flex; gap: 5px; }
+    .card-header .dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.6); }
+    .card-header .dot:first-child { background: rgba(255,255,255,0.95); }
+
+    .image-area {
+      background: linear-gradient(160deg, #fdf2f8, #ede9fe, #e0f2fe);
+      padding: 24px;
+      position: relative;
+      min-height: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .pokeball-bg {
+      position: absolute;
+      width: 180px; height: 180px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.3);
+      border: 2px solid rgba(255,255,255,0.5);
+    }
+    #pokemonImage {
+      width: 140px; height: 140px;
+      object-fit: contain;
+      position: relative;
+      z-index: 1;
+      animation: bounce 2.4s ease-in-out infinite;
+      filter: drop-shadow(0 6px 12px rgba(200,100,150,0.25));
+      image-rendering: pixelated;
+      transition: opacity 0.3s;
+    }
+    #pokemonImage.loading { opacity: 0; }
+    @keyframes bounce {
+      0%,100% { transform: translateY(0); }
+      50%      { transform: translateY(-10px); }
+    }
+
+    .info-area { padding: 20px 24px 16px; }
+
+    #pokemonName {
+      font-family: 'Kaisei Decol', serif;
+      font-size: 2rem;
+      color: #7c3aed;
+      margin-bottom: 4px;
+      letter-spacing: 2px;
+    }
+    #pokemonNameEn { color: #c4a0c8; font-size: 0.85rem; margin-bottom: 16px; letter-spacing: 1px; }
+
+    .types { display: flex; gap: 8px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; }
+    .type-badge {
+      padding: 4px 16px;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: white;
+      letter-spacing: 1px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    }
+
+    .stats {
+      background: rgba(253,242,248,0.7);
+      border-radius: 18px;
+      padding: 16px 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      border: 1px solid rgba(249,168,212,0.3);
+      margin-bottom: 20px;
+    }
+    .stat-item { text-align: center; }
+    .stat-label { font-size: 0.72rem; color: #c4a0c8; letter-spacing: 1px; margin-bottom: 2px; }
+    .stat-value { font-size: 1.1rem; font-weight: 700; color: #7c3aed; }
+
+    /* 進化チェーン */
+    .evo-section {
+      border-top: 1px dashed rgba(249,168,212,0.5);
+      padding: 16px 24px 20px;
+    }
+    .evo-title {
+      font-size: 0.75rem;
+      color: #c4a0c8;
+      letter-spacing: 2px;
+      margin-bottom: 12px;
+    }
+    .evo-chain {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+    .evo-level {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-items: center;
+    }
+    .evo-arrow {
+      color: #f9a8d4;
+      font-size: 1.2rem;
+      margin: 0 2px;
+      align-self: center;
+    }
+    .evo-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: rgba(253,242,248,0.6);
+      border: 2px solid rgba(249,168,212,0.3);
+      border-radius: 16px;
+      padding: 8px 10px 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      min-width: 68px;
+    }
+    .evo-card:hover {
+      background: rgba(249,168,212,0.2);
+      border-color: #f472b6;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(244,114,182,0.25);
+    }
+    .evo-card.current {
+      background: linear-gradient(135deg, rgba(249,168,212,0.35), rgba(196,181,253,0.35));
+      border-color: #f472b6;
+      box-shadow: 0 0 0 2px rgba(244,114,182,0.3);
+    }
+    .evo-card img {
+      width: 52px; height: 52px;
+      object-fit: contain;
+      image-rendering: pixelated;
+    }
+    .evo-card span {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #9a6aaa;
+      margin-top: 2px;
+      text-align: center;
+      line-height: 1.2;
+    }
+    .evo-card.current span { color: #7c3aed; }
+
+    .evo-loading {
+      color: #c4a0c8;
+      font-size: 0.85rem;
+      animation: pulse 1.2s ease-in-out infinite alternate;
+    }
+
+    .loading-msg {
+      color: #c4a0c8;
+      font-size: 1rem;
+      padding: 20px;
+      animation: pulse 1.2s ease-in-out infinite alternate;
+    }
+    @keyframes pulse {
+      from { opacity: 0.5; }
+      to   { opacity: 1; }
+    }
+
+    .reload-btn {
+      display: block;
+      width: 100%;
+      margin-top: 16px;
+      background: linear-gradient(135deg, #f9a8d4, #f472b6);
+      border: none;
+      border-radius: 20px;
+      padding: 14px;
+      color: white;
+      font-size: 1rem;
+      font-weight: 700;
+      font-family: 'Noto Sans JP', sans-serif;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(244,114,182,0.4);
+      transition: all 0.2s ease;
+      letter-spacing: 1px;
+    }
+    .reload-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 22px rgba(244,114,182,0.6); }
+    .reload-btn:active { transform: none; }
+  </style>
+</head>
+<body>
+
+<div class="bubble" style="width:280px;height:280px;background:#ffd6e8;top:-80px;left:-80px;--dur:6s"></div>
+<div class="bubble" style="width:180px;height:180px;background:#c7f2fa;bottom:-50px;right:-40px;--dur:8s"></div>
+<div class="bubble" style="width:130px;height:130px;background:#ffecd2;top:35%;left:78%;--dur:7s"></div>
+<div class="deco" style="top:8%;left:6%;--sz:2.8rem;--dur:12s">🌸</div>
+<div class="deco" style="top:72%;left:4%;--sz:2.2rem;--dur:16s">⭐</div>
+<div class="deco" style="top:12%;right:7%;--sz:2.6rem;--dur:10s">🍭</div>
+<div class="deco" style="bottom:12%;right:8%;--sz:2.8rem;--dur:14s">🎀</div>
+
+<main>
+  <h1>🔮 ポケモン図鑑</h1>
+
+  <div class="pokedex-card">
+    <div class="card-header">
+      <span class="number" id="pokedexNumber">No. ???</span>
+      <div class="dots">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      </div>
+    </div>
+
+    <div class="image-area">
+      <div class="pokeball-bg"></div>
+      <img id="pokemonImage" src="" alt="ポケモン" class="loading">
+    </div>
+
+    <div class="info-area">
+      <p class="loading-msg" id="loadingMsg">よみこみちゅう…✨</p>
+      <h2 id="pokemonName" style="display:none"></h2>
+      <p id="pokemonNameEn" style="display:none"></p>
+      <div class="types" id="types" style="display:none"></div>
+      <div class="stats" id="stats" style="display:none">
+        <div class="stat-item"><p class="stat-label">たかさ</p><p class="stat-value" id="statHeight">-</p></div>
+        <div class="stat-item"><p class="stat-label">おもさ</p><p class="stat-value" id="statWeight">-</p></div>
+        <div class="stat-item"><p class="stat-label">HP</p><p class="stat-value" id="statHp">-</p></div>
+        <div class="stat-item"><p class="stat-label">こうげき</p><p class="stat-value" id="statAtk">-</p></div>
+      </div>
+    </div>
+
+    <div class="evo-section" id="evoSection" style="display:none">
+      <p class="evo-title">✨ しんかチェーン ✨</p>
+      <div class="evo-chain" id="evoChain">
+        <p class="evo-loading">よみこみちゅう…</p>
+      </div>
+    </div>
+  </div>
+
+  <button class="reload-btn" id="reloadBtn">🎲 べつのポケモンをみる</button>
+</main>
+
+<script>
+  const typeColors = {
+    normal:'#A8A878', fire:'#F08030', water:'#6890F0', grass:'#78C850',
+    electric:'#F8D030', ice:'#98D8D8', fighting:'#C03028', poison:'#A040A0',
+    ground:'#E0C068', flying:'#A890F0', psychic:'#F85888', bug:'#A8B820',
+    rock:'#B8A038', ghost:'#705898', dragon:'#7038F8', dark:'#705848',
+    steel:'#B8B8D0', fairy:'#EE99AC'
+  };
+  const typeJa = {
+    normal:'ノーマル', fire:'ほのお', water:'みず', grass:'くさ',
+    electric:'でんき', ice:'こおり', fighting:'かくとう', poison:'どく',
+    ground:'じめん', flying:'ひこう', psychic:'エスパー', bug:'むし',
+    rock:'いわ', ghost:'ゴースト', dragon:'ドラゴン', dark:'あく',
+    steel:'はがね', fairy:'フェアリー'
+  };
+
+  let currentId = null;
+
+  // 進化チェーンのツリーをレベル別（段階別）に整理
+  function getChainLevels(chainNode) {
+    const levels = [];
+    function traverse(node, depth) {
+      if (!levels[depth]) levels[depth] = [];
+      const id = parseInt(node.species.url.split('/').filter(Boolean).pop());
+      levels[depth].push({ name: node.species.name, id });
+      node.evolves_to.forEach(n => traverse(n, depth + 1));
+    }
+    traverse(chainNode, 0);
+    return levels;
+  }
+
+  function showPokemon(id) {
+    currentId = id;
+
+    document.getElementById('loadingMsg').style.display = 'block';
+    document.getElementById('pokemonName').style.display = 'none';
+    document.getElementById('pokemonNameEn').style.display = 'none';
+    document.getElementById('types').style.display = 'none';
+    document.getElementById('stats').style.display = 'none';
+    document.getElementById('evoSection').style.display = 'none';
+    document.getElementById('pokemonImage').classList.add('loading');
+    document.getElementById('pokedexNumber').textContent = 'No. ???';
+
+    Promise.all([
+      fetch(`https://pokeapi.co/api/v2/pokemon/${id}`).then(r => r.json()),
+      fetch(`https://pokeapi.co/api/v2/pokemon-species/${id}`).then(r => r.json())
+    ]).then(function([data, species]) {
+      document.getElementById('pokedexNumber').textContent = 'No. ' + String(id).padStart(3, '0');
+
+      const img = document.getElementById('pokemonImage');
+      img.src = data.sprites.front_default;
+      img.classList.remove('loading');
+
+      const jaName = species.names.find(n => n.language.name === 'ja');
+      document.getElementById('pokemonName').textContent = jaName ? jaName.name : data.name;
+      document.getElementById('pokemonName').style.display = 'block';
+
+      document.getElementById('pokemonNameEn').textContent = data.name;
+      document.getElementById('pokemonNameEn').style.display = 'block';
+
+      const typesEl = document.getElementById('types');
+      typesEl.innerHTML = '';
+      data.types.forEach(function(t) {
+        const badge = document.createElement('span');
+        badge.className = 'type-badge';
+        badge.textContent = typeJa[t.type.name] || t.type.name;
+        badge.style.background = typeColors[t.type.name] || '#aaa';
+        typesEl.appendChild(badge);
+      });
+      typesEl.style.display = 'flex';
+
+      document.getElementById('statHeight').textContent = (data.height / 10) + 'm';
+      document.getElementById('statWeight').textContent = (data.weight / 10) + 'kg';
+      const hp  = data.stats.find(s => s.stat.name === 'hp');
+      const atk = data.stats.find(s => s.stat.name === 'attack');
+      document.getElementById('statHp').textContent = hp ? hp.base_stat : '-';
+      document.getElementById('statAtk').textContent = atk ? atk.base_stat : '-';
+      document.getElementById('stats').style.display = 'grid';
+
+      document.getElementById('loadingMsg').style.display = 'none';
+
+      // 進化チェーンを取得
+      return fetch(species.evolution_chain.url).then(r => r.json());
+    }).then(function(evoData) {
+      const levels = getChainLevels(evoData.chain);
+
+      // 進化が1段階のみ（進化なし）なら表示しない
+      if (levels.length <= 1) return;
+
+      // 各段階の全ポケモンのスプライトと日本語名を取得
+      const allPokemon = levels.flat();
+      return Promise.all(
+        allPokemon.map(p =>
+          Promise.all([
+            fetch(`https://pokeapi.co/api/v2/pokemon/${p.id}`).then(r => r.json()),
+            fetch(`https://pokeapi.co/api/v2/pokemon-species/${p.id}`).then(r => r.json())
+          ]).then(([pData, pSpecies]) => {
+            const ja = pSpecies.names.find(n => n.language.name === 'ja');
+            return {
+              id: p.id,
+              name: ja ? ja.name : p.name,
+              sprite: pData.sprites.front_default
+            };
+          })
+        )
+      ).then(function(results) {
+        // id→データのマップを作る
+        const dataMap = {};
+        results.forEach(r => { dataMap[r.id] = r; });
+
+        const chainEl = document.getElementById('evoChain');
+        chainEl.innerHTML = '';
+
+        levels.forEach(function(level, i) {
+          if (i > 0) {
+            const arrow = document.createElement('span');
+            arrow.className = 'evo-arrow';
+            arrow.textContent = '▶';
+            chainEl.appendChild(arrow);
+          }
+
+          const levelEl = document.createElement('div');
+          levelEl.className = 'evo-level';
+
+          level.forEach(function(p) {
+            const d = dataMap[p.id];
+            if (!d) return;
+
+            const card = document.createElement('div');
+            card.className = 'evo-card' + (p.id === currentId ? ' current' : '');
+            card.innerHTML = `<img src="${d.sprite}" alt="${d.name}"><span>${d.name}</span>`;
+            if (p.id !== currentId) {
+              card.addEventListener('click', () => showPokemon(p.id));
+            }
+            levelEl.appendChild(card);
+          });
+
+          chainEl.appendChild(levelEl);
+        });
+
+        document.getElementById('evoSection').style.display = 'block';
+      });
+    }).catch(function(error) {
+      document.getElementById('loadingMsg').textContent = 'よみこみに失敗しました 😢';
+      console.error(error);
+    });
+  }
+
+  function loadRandom() {
+    const num = Math.floor(Math.random() * 898) + 1;
+    showPokemon(num);
+  }
+
+  document.getElementById('reloadBtn').addEventListener('click', loadRandom);
+  loadRandom();
+</script>
+
+</body>
+</html>
