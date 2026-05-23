@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <title>やることリスト</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Kaisei+Decol:wght@700&family=Noto+Sans+JP:wght@400;700&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(160deg, #ffd6e8 0%, #ffecd2 50%, #d4f1f9 100%);
+      font-family: 'Noto Sans JP', sans-serif;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 32px 20px 48px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    .bubble {
+      position: fixed;
+      border-radius: 50%;
+      opacity: 0.22;
+      animation: float var(--dur) ease-in-out infinite alternate;
+      pointer-events: none;
+    }
+    @keyframes float {
+      from { transform: translateY(0) scale(1); }
+      to   { transform: translateY(-28px) scale(1.05); }
+    }
+    .deco {
+      position: fixed;
+      font-size: var(--sz);
+      animation: spin var(--dur) linear infinite;
+      opacity: 0.15;
+      pointer-events: none;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    main {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 460px;
+    }
+
+    h1 {
+      font-family: 'Kaisei Decol', serif;
+      font-size: 1.8rem;
+      color: #e07aaa;
+      text-align: center;
+      margin-bottom: 20px;
+      letter-spacing: 2px;
+      text-shadow: 0 2px 10px rgba(224,122,170,0.3);
+    }
+
+    /* 入力カード */
+    .input-card {
+      background: rgba(255,255,255,0.78);
+      backdrop-filter: blur(20px);
+      border-radius: 28px;
+      border: 2px solid rgba(255,255,255,0.9);
+      box-shadow: 0 8px 40px rgba(255,150,180,0.22), 0 2px 0 rgba(255,255,255,0.9) inset;
+      padding: 24px;
+      margin-bottom: 16px;
+      display: flex;
+      gap: 10px;
+    }
+
+    #taskInput {
+      flex: 1;
+      background: rgba(255,240,248,0.8);
+      border: 2px solid #f9b8d4;
+      border-radius: 16px;
+      padding: 12px 16px;
+      color: #7a4a6a;
+      font-size: 1rem;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-weight: 700;
+      outline: none;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    #taskInput::placeholder { color: #d4a8c0; font-weight: 400; }
+    #taskInput:focus {
+      border-color: #e07aaa;
+      box-shadow: 0 0 0 4px rgba(224,122,170,0.15);
+    }
+
+    .add-btn {
+      background: linear-gradient(135deg, #f9a8d4, #f472b6);
+      border: none;
+      border-radius: 16px;
+      padding: 12px 20px;
+      color: white;
+      font-size: 1.2rem;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(244,114,182,0.4);
+      transition: all 0.2s ease;
+      line-height: 1;
+    }
+    .add-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(244,114,182,0.6); }
+    .add-btn:active { transform: none; }
+
+    /* カウンター */
+    .counter {
+      text-align: center;
+      font-size: 0.82rem;
+      color: #c4a0c8;
+      margin-bottom: 12px;
+      letter-spacing: 1px;
+    }
+    .counter span { color: #e07aaa; font-weight: 700; }
+
+    /* タスクリスト */
+    #taskList {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .task-item {
+      background: rgba(255,255,255,0.78);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      border: 2px solid rgba(255,255,255,0.9);
+      box-shadow: 0 4px 16px rgba(255,150,180,0.15);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      animation: slideIn 0.3s cubic-bezier(.34,1.56,.64,1);
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-10px) scale(0.95); }
+      to   { opacity: 1; transform: none; }
+    }
+    .task-item.done {
+      background: rgba(240,255,248,0.78);
+      border-color: rgba(110,231,183,0.4);
+    }
+
+    /* チェックボックス風ボタン */
+    .check-btn {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      border: 2px solid #f9b8d4;
+      background: white;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+    }
+    .check-btn:hover { border-color: #f472b6; transform: scale(1.1); }
+    .task-item.done .check-btn {
+      background: linear-gradient(135deg, #6ee7b7, #34d399);
+      border-color: #34d399;
+      color: white;
+    }
+
+    .task-text {
+      flex: 1;
+      font-size: 0.98rem;
+      color: #7a4a6a;
+      font-weight: 700;
+      line-height: 1.4;
+      transition: all 0.2s;
+    }
+    .task-item.done .task-text {
+      text-decoration: line-through;
+      color: #b0a0b8;
+      font-weight: 400;
+    }
+
+    .delete-btn {
+      background: none;
+      border: none;
+      color: #d4a8c0;
+      font-size: 1rem;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 8px;
+      transition: all 0.2s;
+      line-height: 1;
+    }
+    .delete-btn:hover { color: #f472b6; transform: scale(1.2); }
+
+    /* 空リスト */
+    .empty-msg {
+      text-align: center;
+      color: #c4a0c8;
+      font-size: 0.92rem;
+      padding: 32px 0;
+      letter-spacing: 1px;
+    }
+    .empty-msg .empty-icon { font-size: 2.5rem; display: block; margin-bottom: 10px; }
+
+    /* もどるボタン */
+    #backBtn {
+      position: fixed;
+      top: 16px; left: 16px;
+      z-index: 100;
+      background: rgba(255,255,255,0.78);
+      backdrop-filter: blur(12px);
+      border: 2px solid rgba(255,255,255,0.9);
+      border-radius: 20px;
+      padding: 8px 16px;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: #e07aaa;
+      text-decoration: none;
+      box-shadow: 0 4px 16px rgba(255,150,180,0.2);
+      transition: all 0.2s;
+    }
+    #backBtn:hover { transform: translateY(-2px); }
+
+    /* 全削除ボタン */
+    .clear-btn {
+      display: block;
+      width: 100%;
+      margin-top: 14px;
+      background: rgba(255,255,255,0.6);
+      border: 2px dashed #f9b8d4;
+      border-radius: 16px;
+      padding: 10px;
+      color: #d4a0bc;
+      font-size: 0.85rem;
+      font-family: 'Noto Sans JP', sans-serif;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 1px;
+    }
+    .clear-btn:hover { background: rgba(255,220,235,0.6); color: #e07aaa; }
+  </style>
+</head>
+<body>
+
+<div class="bubble" style="width:280px;height:280px;background:#ffd6e8;top:-80px;left:-80px;--dur:6s"></div>
+<div class="bubble" style="width:180px;height:180px;background:#c7f2fa;bottom:-50px;right:-40px;--dur:8s"></div>
+<div class="bubble" style="width:130px;height:130px;background:#ffecd2;top:35%;left:78%;--dur:7s"></div>
+<div class="deco" style="top:8%;left:6%;--sz:2.8rem;--dur:12s">🌸</div>
+<div class="deco" style="top:72%;left:4%;--sz:2.2rem;--dur:16s">⭐</div>
+<div class="deco" style="top:12%;right:7%;--sz:2.6rem;--dur:10s">🍭</div>
+<div class="deco" style="bottom:12%;right:8%;--sz:2.8rem;--dur:14s">🎀</div>
+
+<a href="index.html" id="backBtn">🏠 もどる</a>
+
+<main>
+  <h1>📝 やることリスト</h1>
+
+  <div class="input-card">
+    <input type="text" id="taskInput" placeholder="やることをいれてね…" maxlength="50">
+    <button class="add-btn" id="addBtn">＋</button>
+  </div>
+
+  <p class="counter" id="counter"></p>
+
+  <div id="taskList"></div>
+
+  <button class="clear-btn" id="clearBtn">🗑 おわったタスクをまとめて消す</button>
+</main>
+
+<script>
+  const taskInput = document.getElementById('taskInput');
+  const addBtn    = document.getElementById('addBtn');
+  const taskList  = document.getElementById('taskList');
+  const counter   = document.getElementById('counter');
+  const clearBtn  = document.getElementById('clearBtn');
+
+  // LocalStorage からタスクを読み込む
+  function loadTasks() {
+    return JSON.parse(localStorage.getItem('tasks') || '[]');
+  }
+
+  // LocalStorage にタスクを保存
+  function saveTasks(tasks) {
+    localStorage.setItem('tasks', JSON.stringify(tasks));
+  }
+
+  // カウンターを更新
+  function updateCounter(tasks) {
+    const done  = tasks.filter(t => t.done).length;
+    const total = tasks.length;
+    if (total === 0) {
+      counter.textContent = '';
+    } else {
+      counter.innerHTML = `<span>${done}</span> / ${total} かんりょう ✨`;
+    }
+  }
+
+  // リストを描画
+  function renderTasks() {
+    const tasks = loadTasks();
+    taskList.innerHTML = '';
+
+    if (tasks.length === 0) {
+      taskList.innerHTML = `
+        <div class="empty-msg">
+          <span class="empty-icon">🌷</span>
+          やることをついかしてみよう！
+        </div>
+      `;
+      updateCounter(tasks);
+      return;
+    }
+
+    tasks.forEach(function(task, index) {
+      const item = document.createElement('div');
+      item.className = 'task-item' + (task.done ? ' done' : '');
+
+      const checkBtn = document.createElement('button');
+      checkBtn.className = 'check-btn';
+      checkBtn.textContent = task.done ? '✓' : '';
+      checkBtn.addEventListener('click', function() {
+        toggleTask(index);
+      });
+
+      const text = document.createElement('span');
+      text.className = 'task-text';
+      text.textContent = task.text;
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'delete-btn';
+      deleteBtn.textContent = '✕';
+      deleteBtn.addEventListener('click', function() {
+        deleteTask(index);
+      });
+
+      item.appendChild(checkBtn);
+      item.appendChild(text);
+      item.appendChild(deleteBtn);
+      taskList.appendChild(item);
+    });
+
+    updateCounter(tasks);
+  }
+
+  // タスクを追加
+  function addTask() {
+    const text = taskInput.value.trim();
+    if (!text) return;
+
+    const tasks = loadTasks();
+    tasks.push({ text, done: false });
+    saveTasks(tasks);
+    renderTasks();
+    taskInput.value = '';
+    taskInput.focus();
+  }
+
+  // 完了トグル
+  function toggleTask(index) {
+    const tasks = loadTasks();
+    tasks[index].done = !tasks[index].done;
+    saveTasks(tasks);
+    renderTasks();
+  }
+
+  // タスクを削除
+  function deleteTask(index) {
+    const tasks = loadTasks();
+    tasks.splice(index, 1);
+    saveTasks(tasks);
+    renderTasks();
+  }
+
+  // 完了タスクをまとめて削除
+  clearBtn.addEventListener('click', function() {
+    const tasks = loadTasks().filter(t => !t.done);
+    saveTasks(tasks);
+    renderTasks();
+  });
+
+  addBtn.addEventListener('click', addTask);
+  taskInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') addTask();
+  });
+
+  renderTasks();
+</script>
+
+</body>
+</html>
