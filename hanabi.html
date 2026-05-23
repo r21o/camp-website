@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <title>花火</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #000; overflow: hidden; }
+    canvas { display: block; }
+
+    #backBtn {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      z-index: 100;
+      background: rgba(255,255,255,0.12);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 20px;
+      padding: 8px 16px;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.8);
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    #backBtn:hover {
+      background: rgba(255,255,255,0.2);
+      transform: translateY(-2px);
+    }
+
+    #hint {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: rgba(255,255,255,0.3);
+      font-size: 0.82rem;
+      font-family: sans-serif;
+      letter-spacing: 1px;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+<a href="index.html" id="backBtn">🏠 もどる</a>
+<p id="hint">クリック・タップで花火を打ち上げよう 🎆</p>
+
+<script src="https://cdn.jsdelivr.net/npm/p5@1.9.4/lib/p5.min.js"></script>
+<script>
+  // 花火の粒（パーティクル）
+  class Particle {
+    constructor(x, y, vx, vy, col, isRocket) {
+      this.x = x;
+      this.y = y;
+      this.vx = vx;
+      this.vy = vy;
+      this.col = col;
+      this.isRocket = isRocket;
+      this.alpha = 255;
+      this.size = isRocket ? 5 : random(3, 7);
+      this.gravity = isRocket ? 0.08 : 0.12;
+      this.trail = [];
+    }
+
+    update() {
+      this.trail.push({ x: this.x, y: this.y, alpha: this.alpha });
+      if (this.trail.length > 8) this.trail.shift();
+
+      this.vy += this.gravity;
+      this.vx *= 0.98;
+      this.vy *= 0.98;
+      this.x += this.vx;
+      this.y += this.vy;
+      this.alpha -= this.isRocket ? 6 : 4;
+    }
+
+    draw() {
+      noStroke();
+      // 尾を描く
+      for (let i = 0; i < this.trail.length; i++) {
+        const t = this.trail[i];
+        const a = map(i, 0, this.trail.length, 0, t.alpha * 0.4);
+        fill(red(this.col), green(this.col), blue(this.col), a);
+        const s = map(i, 0, this.trail.length, 1, this.size * 0.6);
+        ellipse(t.x, t.y, s);
+      }
+      // 本体
+      fill(red(this.col), green(this.col), blue(this.col), this.alpha);
+      ellipse(this.x, this.y, this.size);
+    }
+
+    isDead() {
+      return this.alpha <= 0;
+    }
+  }
+
+  // 花火（ロケット＋爆発管理）
+  class Firework {
+    constructor(x, targetY, col) {
+      this.rocket = new Particle(x, height, 0, random(-14, -18), col, true);
+      this.rocket.targetY = targetY;
+      this.exploded = false;
+      this.particles = [];
+      this.col = col;
+      this.shape = floor(random(3)); // 0:円形 1:星形 2:ハート
+    }
+
+    update() {
+      if (!this.exploded) {
+        this.rocket.update();
+        if (this.rocket.vy >= 0 || this.rocket.y <= this.rocket.targetY) {
+          this.explode();
+        }
+      }
+      for (let i = this.particles.length - 1; i >= 0; i--) {
+        this.particles[i].update();
+        if (this.particles[i].isDead()) this.particles.splice(i, 1);
+      }
+    }
+
+    explode() {
+      this.exploded = true;
+      const cx = this.rocket.x;
+      const cy = this.rocket.y;
+      const count = floor(random(80, 140));
+
+      if (this.shape === 0) {
+        // 円形
+        for (let i = 0; i < count; i++) {
+          const angle = map(i, 0, count, 0, TWO_PI);
+          const speed = random(2, 7);
+          const vx = cos(angle) * speed;
+          const vy = sin(angle) * speed;
+          this.particles.push(new Particle(cx, cy, vx, vy, this.col, false));
+        }
+      } else if (this.shape === 1) {
+        // 星形（5角形放射）
+        for (let i = 0; i < count; i++) {
+          const angle = map(i, 0, count, 0, TWO_PI);
+          const starFactor = (i % 2 === 0) ? 1.0 : 0.45;
+          const speed = random(3, 7) * starFactor;
+          const vx = cos(angle) * speed;
+          const vy = sin(angle) * speed;
+          this.particles.push(new Particle(cx, cy, vx, vy, this.col, false));
+        }
+      } else {
+        // ハート形
+        for (let i = 0; i < count; i++) {
+          const t = map(i, 0, count, 0, TWO_PI);
+          const hx = 16 * pow(sin(t), 3);
+          const hy = -(13 * cos(t) - 5 * cos(2*t) - 2 * cos(3*t) - cos(4*t));
+          const speed = random(0.18, 0.28);
+          this.particles.push(new Particle(cx, cy, hx * speed, hy * speed, this.col, false));
+        }
+      }
+
+      // きらきら白い粒
+      for (let i = 0; i < 20; i++) {
+        const angle = random(TWO_PI);
+        const speed = random(1, 4);
+        this.particles.push(new Particle(cx, cy, cos(angle)*speed, sin(angle)*speed, color(255,255,255), false));
+      }
+    }
+
+    draw() {
+      if (!this.exploded) this.rocket.draw();
+      for (const p of this.particles) p.draw();
+    }
+
+    isDead() {
+      return this.exploded && this.particles.length === 0;
+    }
+  }
+
+  // --- 花火 ---
+  let fireworks = [];
+  let autoTimer = 0;
+
+  function setup() {
+    createCanvas(windowWidth, windowHeight);
+    colorMode(RGB);
+  }
+
+  function draw() {
+    // 残像（背景を半透明で塗る）
+    background(0, 0, 0, 30);
+
+    // 自動打ち上げ
+    autoTimer++;
+    if (autoTimer > 60) {
+      autoTimer = 0;
+      launchFirework(random(width * 0.1, width * 0.9), random(height * 0.1, height * 0.55));
+    }
+
+    for (let i = fireworks.length - 1; i >= 0; i--) {
+      fireworks[i].update();
+      fireworks[i].draw();
+      if (fireworks[i].isDead()) fireworks.splice(i, 1);
+    }
+  }
+
+  function launchFirework(x, targetY) {
+    const palette = [
+      color(255, 100, 150),  // ピンク
+      color(255, 200, 80),   // 黄色
+      color(100, 220, 255),  // 水色
+      color(180, 100, 255),  // 紫
+      color(100, 255, 180),  // 緑
+      color(255, 140, 60),   // オレンジ
+      color(255, 80, 80),    // 赤
+      color(200, 255, 100),  // 黄緑
+    ];
+    const col = palette[floor(random(palette.length))];
+    fireworks.push(new Firework(x, targetY, col));
+  }
+
+  // クリックで打ち上げ
+  function mousePressed() {
+    for (let i = 0; i < 3; i++) {
+      launchFirework(mouseX + random(-40, 40), mouseY + random(-40, 40));
+    }
+  }
+
+  function windowResized() {
+    resizeCanvas(windowWidth, windowHeight);
+  }
+</script>
+
+</body>
+</html>
