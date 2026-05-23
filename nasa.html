@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <title>NASA 天体写真</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Kaisei+Decol:wght@700&family=Noto+Sans+JP:wght@400;700&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(160deg, #ffd6e8 0%, #ffecd2 50%, #d4f1f9 100%);
+      font-family: 'Noto Sans JP', sans-serif;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 32px 20px 48px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    .bubble {
+      position: fixed;
+      border-radius: 50%;
+      opacity: 0.22;
+      animation: float var(--dur) ease-in-out infinite alternate;
+      pointer-events: none;
+    }
+    @keyframes float {
+      from { transform: translateY(0) scale(1); }
+      to   { transform: translateY(-28px) scale(1.05); }
+    }
+
+    .deco {
+      position: fixed;
+      font-size: var(--sz);
+      animation: spin var(--dur) linear infinite;
+      opacity: 0.15;
+      pointer-events: none;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    main {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 600px;
+    }
+
+    h1 {
+      font-family: 'Kaisei Decol', serif;
+      font-size: 1.8rem;
+      color: #e07aaa;
+      text-align: center;
+      margin-bottom: 20px;
+      letter-spacing: 2px;
+      text-shadow: 0 2px 10px rgba(224,122,170,0.3);
+    }
+
+    /* メインカード */
+    .card {
+      background: rgba(255,255,255,0.78);
+      backdrop-filter: blur(20px);
+      border-radius: 32px;
+      border: 2px solid rgba(255,255,255,0.9);
+      box-shadow: 0 8px 40px rgba(255,150,180,0.22), 0 2px 0 rgba(255,255,255,0.9) inset;
+      overflow: hidden;
+    }
+
+    /* カードヘッダー */
+    .card-header {
+      background: linear-gradient(135deg, #f9a8d4, #c4b5fd);
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-header .date-label {
+      font-family: 'Kaisei Decol', serif;
+      color: white;
+      font-size: 0.92rem;
+      letter-spacing: 1px;
+    }
+    .card-header .dots { display: flex; gap: 5px; }
+    .card-header .dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.6); }
+    .card-header .dot:first-child { background: rgba(255,255,255,0.95); }
+
+    /* 画像エリア */
+    .image-wrap {
+      width: 100%;
+      background: linear-gradient(160deg, #fdf2f8, #ede9fe, #e0f2fe);
+      min-height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    #apodImage {
+      width: 100%;
+      max-height: 420px;
+      object-fit: cover;
+      display: block;
+      transition: opacity 0.5s;
+    }
+    #apodImage.loading { opacity: 0; }
+    #apodVideo { width: 100%; aspect-ratio: 16/9; border: none; }
+
+    /* 情報エリア */
+    .info-area { padding: 22px 28px 26px; }
+
+    .meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .copyright { font-size: 0.78rem; color: #c4a0c8; }
+
+    #apodTitle {
+      font-family: 'Kaisei Decol', serif;
+      font-size: 1.4rem;
+      color: #7c3aed;
+      margin-bottom: 12px;
+      line-height: 1.45;
+      letter-spacing: 1px;
+    }
+
+    #apodExplanation {
+      font-size: 0.86rem;
+      color: #9a8aaa;
+      line-height: 1.9;
+      max-height: 100px;
+      overflow: hidden;
+      position: relative;
+      transition: max-height 0.4s ease;
+    }
+    #apodExplanation.expanded { max-height: 3000px; }
+    #apodExplanation:not(.expanded)::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 40px;
+      background: linear-gradient(transparent, rgba(255,255,255,0.9));
+    }
+
+    .expand-btn {
+      background: none;
+      border: none;
+      color: #e07aaa;
+      font-size: 0.82rem;
+      cursor: pointer;
+      margin-top: 6px;
+      font-family: 'Noto Sans JP', sans-serif;
+      letter-spacing: 1px;
+      padding: 0;
+    }
+    .expand-btn:hover { color: #f472b6; text-decoration: underline; }
+
+    /* ボタン群 */
+    .btn-area {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .btn-row { display: flex; gap: 10px; }
+
+    .btn {
+      flex: 1;
+      border: none;
+      border-radius: 20px;
+      padding: 13px 16px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      font-family: 'Noto Sans JP', sans-serif;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      letter-spacing: 1px;
+    }
+    .btn-pink {
+      background: linear-gradient(135deg, #f9a8d4, #f472b6);
+      color: white;
+      box-shadow: 0 4px 16px rgba(244,114,182,0.4);
+    }
+    .btn-pink:hover { transform: translateY(-2px); box-shadow: 0 6px 22px rgba(244,114,182,0.6); }
+    .btn-purple {
+      background: linear-gradient(135deg, #c4b5fd, #a78bfa);
+      color: white;
+      box-shadow: 0 4px 16px rgba(167,139,250,0.4);
+    }
+    .btn-purple:hover { transform: translateY(-2px); box-shadow: 0 6px 22px rgba(167,139,250,0.6); }
+    .btn:active { transform: none !important; }
+
+    /* 日付ピッカー */
+    .date-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,0.78);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      border: 2px solid rgba(255,255,255,0.9);
+      padding: 10px 16px;
+      box-shadow: 0 4px 16px rgba(255,150,180,0.15);
+    }
+    .date-row label { font-size: 0.82rem; color: #c4a0c8; white-space: nowrap; }
+    input[type="date"] {
+      background: rgba(253,242,248,0.8);
+      border: 2px solid #f9b8d4;
+      border-radius: 12px;
+      padding: 7px 10px;
+      color: #7a4a6a;
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      outline: none;
+      flex: 1;
+      cursor: pointer;
+    }
+    input[type="date"]:focus { border-color: #e07aaa; box-shadow: 0 0 0 3px rgba(224,122,170,0.15); }
+    .btn-go {
+      flex: 0;
+      min-width: 52px;
+      padding: 8px 12px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+    }
+
+    /* ローディング */
+    .loading-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 20px;
+      gap: 14px;
+    }
+    .loading-mascot {
+      font-size: 3rem;
+      animation: bounce 1.6s ease-in-out infinite;
+    }
+    @keyframes bounce {
+      0%,100% { transform: translateY(0); }
+      50%      { transform: translateY(-12px); }
+    }
+    .loading-text { color: #c4a0c8; font-size: 0.92rem; letter-spacing: 1px; }
+  </style>
+</head>
+<body>
+
+<div class="bubble" style="width:280px;height:280px;background:#ffd6e8;top:-80px;left:-80px;--dur:6s"></div>
+<div class="bubble" style="width:180px;height:180px;background:#c7f2fa;bottom:-50px;right:-40px;--dur:8s"></div>
+<div class="bubble" style="width:130px;height:130px;background:#ffecd2;top:35%;left:78%;--dur:7s"></div>
+<div class="deco" style="top:8%;left:6%;--sz:2.8rem;--dur:12s">🌸</div>
+<div class="deco" style="top:72%;left:4%;--sz:2.2rem;--dur:16s">⭐</div>
+<div class="deco" style="top:12%;right:7%;--sz:2.6rem;--dur:10s">🚀</div>
+<div class="deco" style="bottom:12%;right:8%;--sz:2.8rem;--dur:14s">🪐</div>
+<div class="deco" style="bottom:8%;left:38%;--sz:1.8rem;--dur:18s">✨</div>
+
+<a href="index.html" style="position:fixed;top:16px;left:16px;z-index:100;background:rgba(255,255,255,0.78);backdrop-filter:blur(12px);border:2px solid rgba(255,255,255,0.9);border-radius:20px;padding:8px 16px;font-family:'Noto Sans JP',sans-serif;font-weight:700;font-size:0.85rem;color:#e07aaa;text-decoration:none;box-shadow:0 4px 16px rgba(255,150,180,0.2);transition:all 0.2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">🏠 もどる</a>
+
+<main>
+  <h1>🌌 NASA 天体写真</h1>
+
+  <div class="card" id="card">
+    <div class="card-header" id="cardHeader" style="display:none">
+      <span class="date-label" id="dateLabel">📅 ---</span>
+      <div class="dots">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      </div>
+    </div>
+    <div id="cardBody">
+      <div class="loading-area">
+        <span class="loading-mascot">🔭</span>
+        <p class="loading-text">よみこみちゅう…✨</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="btn-area">
+    <div class="btn-row">
+      <button class="btn btn-pink" id="todayBtn">📅 今日の写真</button>
+      <button class="btn btn-purple" id="randomBtn">🎲 ランダム</button>
+    </div>
+    <div class="date-row">
+      <label for="datePicker">📆</label>
+      <input type="date" id="datePicker">
+      <button class="btn btn-pink btn-go" id="dateBtn">GO</button>
+    </div>
+  </div>
+</main>
+
+<script>
+  const today = new Date().toISOString().split('T')[0];
+  const dateInput = document.getElementById('datePicker');
+  dateInput.min = '1995-06-16';
+  dateInput.max = today;
+  dateInput.value = today;
+
+  function randomDate() {
+    const start = new Date('1995-06-16').getTime();
+    const end   = new Date(today).getTime();
+    return new Date(start + Math.random() * (end - start)).toISOString().split('T')[0];
+  }
+
+  function showLoading() {
+    document.getElementById('cardHeader').style.display = 'none';
+    document.getElementById('cardBody').innerHTML = `
+      <div class="loading-area">
+        <span class="loading-mascot">🔭</span>
+        <p class="loading-text">よみこみちゅう…✨</p>
+      </div>
+    `;
+  }
+
+  function renderCard(data) {
+    const isVideo = data.media_type === 'video';
+
+    document.getElementById('dateLabel').textContent = '📅 ' + data.date;
+    document.getElementById('cardHeader').style.display = 'flex';
+
+    document.getElementById('cardBody').innerHTML = `
+      ${isVideo
+        ? `<iframe id="apodVideo" src="${data.url}" allowfullscreen></iframe>`
+        : `<div class="image-wrap">
+             <img id="apodImage" src="${data.url}" alt="${data.title}" class="loading">
+           </div>`
+      }
+      <div class="info-area">
+        <div class="meta">
+          ${data.copyright ? `<span class="copyright">© ${data.copyright.replace('\n','')}</span>` : ''}
+        </div>
+        <h2 id="apodTitle">${data.title}</h2>
+        <p id="apodExplanation">${data.explanation}</p>
+        <button class="expand-btn" id="expandBtn">▼ もっとみる</button>
+      </div>
+    `;
+
+    if (!isVideo) {
+      const img = document.getElementById('apodImage');
+      img.onload = () => img.classList.remove('loading');
+    }
+
+    document.getElementById('expandBtn').addEventListener('click', function() {
+      const el = document.getElementById('apodExplanation');
+      const expanded = el.classList.toggle('expanded');
+      this.textContent = expanded ? '▲ とじる' : '▼ もっとみる';
+    });
+  }
+
+  function fetchAPOD(date) {
+    showLoading();
+    fetch(`https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY&date=${date}`)
+      .then(r => {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(renderCard)
+      .catch(function(err) {
+        document.getElementById('cardHeader').style.display = 'none';
+        document.getElementById('cardBody').innerHTML = `
+          <div class="loading-area">
+            <span style="font-size:2.5rem">😢</span>
+            <p class="loading-text">よみこみに失敗しました</p>
+            <p style="font-size:0.75rem;color:#c4a0c8">${err}</p>
+          </div>
+        `;
+      });
+  }
+
+  document.getElementById('todayBtn').addEventListener('click', () => {
+    dateInput.value = today;
+    fetchAPOD(today);
+  });
+  document.getElementById('randomBtn').addEventListener('click', () => {
+    const d = randomDate();
+    dateInput.value = d;
+    fetchAPOD(d);
+  });
+  document.getElementById('dateBtn').addEventListener('click', () => {
+    if (dateInput.value) fetchAPOD(dateInput.value);
+  });
+
+  fetchAPOD(today);
+</script>
+
+</body>
+</html>
